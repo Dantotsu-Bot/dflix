@@ -111,7 +111,7 @@ jobs:
 
       - name: Upload APKs (chunk ${{ matrix.chunk }})
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
-        if: "github.repository == 'Dantotsu-Bot/aniyomi-extensions'"
+        if: "github.repository == 'Dantotsu-Bot/dflix'"
         with:
           name: "individual-apks-${{ matrix.chunk }}"
           path: "**/*.apk"
@@ -124,7 +124,7 @@ jobs:
     name: Publish repo
     needs:
       - build_individual
-    if: "github.repository == 'Dantotsu-Bot/aniyomi-extensions'"
+    if: "github.repository == 'Dantotsu-Bot/dflix'"
     runs-on: ubuntu-latest
     steps:
       - name: Download APK artifacts
@@ -156,7 +156,7 @@ jobs:
       - name: Checkout repo branch
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
-          repository: Dantotsu-Bot/aniyomi-extensions
+          repository: Dantotsu-Bot/dflix
           token: ${{ secrets.ANIYOMIORG_BOT_PAT }}
           ref: repo
           path: repo
