@@ -1,7 +1,7 @@
 ext {
-    extName = 'Anilist'
+    extName = 'Dflix'
     extClass = '.AniList'
-    extVersionCode = 9
+    extVersionCode = 1
 }
 
 apply from: "$rootDir/common.gradle"
