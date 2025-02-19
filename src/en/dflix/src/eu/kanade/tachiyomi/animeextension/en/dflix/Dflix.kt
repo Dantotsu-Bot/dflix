@@ -44,6 +44,8 @@ class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override val lang = "en"
 
+    override val supportsLatest = false
+
     override val client = network.client.newBuilder()
         .rateLimitHost("https://api.jikan.moe".toHttpUrl(), 1)
         .build()
@@ -62,9 +64,13 @@ class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     // ============================== Popular ===============================
 
-    override fun popularAnimeRequest(page: Int): Request {
-        return AnimesPage(null, false)
-    }
+    override fun popularUpdatesRequest(page: Int): Request = throw UnsupportedOperationException()
+    override fun popularUpdatesParse(response: Response): AnimesPage = throw UnsupportedOperationException()
+
+    // ============================== Latest ===============================
+
+    override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException()
+    override fun latestUpdatesParse(response: Response): AnimesPage = throw UnsupportedOperationException()
 
     // =============================== Search ===============================
 
