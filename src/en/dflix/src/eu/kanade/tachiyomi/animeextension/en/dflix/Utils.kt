@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.en.anilist
+package eu.kanade.tachiyomi.animeextension.en.dflix
 
 import java.text.ParseException
 import java.text.SimpleDateFormat

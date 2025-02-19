@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.en.anilist
+package eu.kanade.tachiyomi.animeextension.en.dflix
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.parseAs

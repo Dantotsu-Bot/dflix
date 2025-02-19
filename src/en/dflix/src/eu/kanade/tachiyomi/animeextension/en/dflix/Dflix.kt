@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.en.anilist
+package eu.kanade.tachiyomi.animeextension.en.dflix
 
 import android.app.Application
 import android.content.SharedPreferences
@@ -34,9 +34,9 @@ import uy.kohesive.injekt.injectLazy
 import kotlin.math.ceil
 import kotlin.math.floor
 
-class AniList : ConfigurableAnimeSource, AnimeHttpSource() {
+class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
 
-    override val name = "AniList"
+    override val name = "Dflix"
 
     override val baseUrl = "https://anilist.co"
 
@@ -298,7 +298,7 @@ class AniList : ConfigurableAnimeSource, AnimeHttpSource() {
             val episodeList = try {
                 getFromMal(malId, episodeCount)
             } catch (e: Exception) {
-                Log.e("Anilist-Ext", "Failed to get episodes from mal: ${e.message}")
+                Log.e("Dflix-Ext", "Failed to get episodes from mal: ${e.message}")
                 null
             }
 

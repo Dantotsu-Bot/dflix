@@ -1,6 +1,6 @@
 ext {
     extName = 'Dflix'
-    extClass = '.AniList'
+    extClass = '.Dflix'
     extVersionCode = 2
 }
 

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.en.anilist
+package eu.kanade.tachiyomi.animeextension.en.dflix
 
 /**
  * -R> = regex conversion.
