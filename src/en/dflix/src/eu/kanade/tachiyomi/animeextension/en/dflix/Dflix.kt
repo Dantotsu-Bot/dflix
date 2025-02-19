@@ -64,8 +64,8 @@ class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     // ============================== Popular ===============================
 
-    override fun popularAnimeRequest(page: Int): Request {
-        return ""
+    override fun popularAnimeRequest(page: Int): Request? {
+        return null
     }
 
     override fun popularAnimeParse(response: Response): AnimesPage {
