@@ -65,15 +65,7 @@ class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
     // ============================== Popular ===============================
 
     override fun popularAnimeRequest(page: Int): Request = throw UnsupportedOperationException()
-
-    override fun popularAnimeParse(response: Response): AnimesPage {
-        val titleLang = preferences.titleLang
-        val page = response.parseAs<PagesResponse>().data.page
-        val hasNextPage = page.pageInfo.hasNextPage
-        val animeList = page.media.map { it.toSAnime(titleLang) }
-
-        return AnimesPage(animeList, hasNextPage)
-    }
+    override fun popularAnimeParse(response: Response): AnimesPage = throw UnsupportedOperationException()
 
     // ============================== Latest ===============================
 
@@ -134,7 +126,12 @@ class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
     }
 
     override fun searchAnimeParse(response: Response): AnimesPage {
-        return popularAnimeParse(response)
+        val titleLang = preferences.titleLang
+        val page = response.parseAs<PagesResponse>().data.page
+        val hasNextPage = page.pageInfo.hasNextPage
+        val animeList = page.media.map { it.toSAnime(titleLang) }
+
+        return AnimesPage(animeList, hasNextPage)
     }
 
     // ============================== Filters ===============================
