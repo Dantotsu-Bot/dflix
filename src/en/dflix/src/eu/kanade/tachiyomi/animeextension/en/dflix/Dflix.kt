@@ -44,8 +44,6 @@ class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override val lang = "en"
 
-    override val supportsLatest = true
-
     override val client = network.client.newBuilder()
         .rateLimitHost("https://api.jikan.moe".toHttpUrl(), 1)
         .build()
@@ -64,50 +62,8 @@ class Dflix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     // ============================== Popular ===============================
 
-    private fun createSortRequest(
-        sort: String,
-        page: Int,
-        extraVar: Pair<String, String>? = null,
-    ): Request {
-        val variablesObject = buildJsonObject {
-            put("page", page)
-            put("perPage", PER_PAGE)
-            put("sort", sort)
-            put("type", "ANIME")
-            extraVar?.let { put(extraVar.first, extraVar.second) }
-            if (!preferences.allowAdult) put("isAdult", false)
-        }
-        val variables = json.encodeToString(variablesObject)
-
-        val body = FormBody.Builder().apply {
-            add("query", getSortQuery())
-            add("variables", variables)
-        }.build()
-
-        return POST(apiUrl, body = body)
-    }
-
     override fun popularAnimeRequest(page: Int): Request {
-        return createSortRequest("TRENDING_DESC", page)
-    }
-
-    override fun popularAnimeParse(response: Response): AnimesPage {
-        val titleLang = preferences.titleLang
-        val page = response.parseAs<PagesResponse>().data.page
-        val hasNextPage = page.pageInfo.hasNextPage
-        val animeList = page.media.map { it.toSAnime(titleLang) }
-
-        return AnimesPage(animeList, hasNextPage)
-    }
-
-    // =============================== Latest ===============================
-
-    override fun latestUpdatesRequest(page: Int): Request {
-        return createSortRequest("START_DATE_DESC", page, Pair("status", "RELEASING"))
-    }
-
-    override fun latestUpdatesParse(response: Response): AnimesPage {
-        return popularAnimeParse(response)
+        return AnimesPage(null, false)
     }
 
     // =============================== Search ===============================
