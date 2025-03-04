@@ -65,7 +65,7 @@ class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
     override fun latestUpdatesNextPageSelector(): String = throw UnsupportedOperationException()
 
     // =============================== Search ===============================
-    override fun searchAnimeRequest(page: Int, query: String, null): Request = throw UnsupportedOperationException()
+    override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request = throw UnsupportedOperationException()
 
     override fun searchAnimeSelector(): String = throw UnsupportedOperationException()
 
