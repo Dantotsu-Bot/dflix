@@ -65,22 +65,13 @@ class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
     override fun latestUpdatesNextPageSelector(): String = throw UnsupportedOperationException()
 
     // =============================== Search ===============================
-    override fun searchAnimeRequest(page: Int, query: String, null): Request {
-        val params = GogoAnimeFilters.getSearchParameters(filters)
+    override fun searchAnimeRequest(page: Int, query: String, null): Request = throw UnsupportedOperationException()
 
-        return when {
-            params.genre.isNotEmpty() -> GET("$baseUrl/genre/${params.genre}?page=$page", headers)
-            params.recent.isNotEmpty() -> GET("$AJAX_URL/page-recent-release.html?page=$page&type=${params.recent}", headers)
-            params.season.isNotEmpty() -> GET("$baseUrl/${params.season}?page=$page", headers)
-            else -> GET("$baseUrl/filter.html?keyword=$query&${params.filter}&page=$page", headers)
-        }
-    }
+    override fun searchAnimeSelector(): String = throw UnsupportedOperationException()
 
-    override fun searchAnimeSelector(): String = popularAnimeSelector()
+    override fun searchAnimeFromElement(element: Element): SAnime = throw UnsupportedOperationException()
 
-    override fun searchAnimeFromElement(element: Element): SAnime = popularAnimeFromElement(element)
-
-    override fun searchAnimeNextPageSelector(): String = popularAnimeNextPageSelector()
+    override fun searchAnimeNextPageSelector(): String = throw UnsupportedOperationException()
 
     // =========================== Anime Details ============================
     override fun animeDetailsParse(document: Document): SAnime {
