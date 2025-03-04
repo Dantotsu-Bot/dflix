@@ -1,9 +1,6 @@
 package eu.kanade.tachiyomi.animeextension.en.dflix
 
 import android.app.Application
-import androidx.preference.ListPreference
-import androidx.preference.MultiSelectListPreference
-import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
