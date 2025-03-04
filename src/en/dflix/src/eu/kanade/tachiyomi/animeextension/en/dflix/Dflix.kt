@@ -32,7 +32,7 @@ class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
 
     override fun headersBuilder() = super.headersBuilder()
         .add("Origin", baseUrl)
-        .add("Cookie", cookieHeaders)
+        .add("Cookie", cookieHeader)
         .add("Referer", "$baseUrl/")
 
     private val preferences by lazy {
@@ -96,7 +96,7 @@ class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
 
     // ============================== Episodes ==============================
     private fun episodesRequest(totalEpisodes: String, id: String): List<SEpisode> {
-        val request = GET("$AJAX_URL/load-list-episode?ep_start=0&ep_end=$totalEpisodes&id=$id", headers)
+        val request = GET("localhost", headers)
         val epResponse = client.newCall(request).execute()
         val document = epResponse.asJsoup()
         return document.select("a").map(::episodeFromElement)
@@ -122,20 +122,7 @@ class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
 
     // ============================ Video Links =============================
 
-    override fun videoListParse(response: Response): List<Video> {
-        val document = response.asJsoup()
-        val hosterSelection = preferences.getStringSet(PREF_HOSTER_KEY, PREF_HOSTER_DEFAULT)!!
-
-        return document.select("div.anime_muti_link > ul > li").parallelCatchingFlatMapBlocking { server ->
-            val className = server.className()
-            if (!hosterSelection.contains(className)) return@parallelCatchingFlatMapBlocking emptyList()
-            val serverUrl = server.selectFirst("a")
-                ?.attr("abs:data-video")
-                ?: return@parallelCatchingFlatMapBlocking emptyList()
-
-            getHosterVideos(className, serverUrl)
-        }
-    }
+    override fun videoListParse(response: Response): List<Video> = throw UnsupportedOperationException()
 
     private fun getHosterVideos(className: String, serverUrl: String): List<Video> {
         return emptyList()
@@ -155,18 +142,7 @@ class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
             .takeUnless(String::isBlank)
     }
 
-    override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
-
-        return sortedWith(
-            compareBy(
-                { it.quality.contains(quality) },
-                { Regex("""(\d+)p""").find(it.quality)?.groupValues?.get(1)?.toIntOrNull() ?: 0 },
-                { it.quality.contains(server) },
-            ),
-        ).reversed()
-    }
+    override fun List<Video>.sort(): List<Video> = throw UnsupportedOperationException()
 
     private fun parseStatus(statusString: String): Int {
         return when (statusString) {
