@@ -48,7 +48,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             val card = element.parent()
             SAnime.create().apply {
                 setUrlWithoutDomain(element.attr("href"))
-                thumbnail_url = element.selectFirst("img")!!.attr("src")
+                thumbnail_url = element.selectFirst("img")!!.attr("src") ?: "localhost"
                 title = card.selectFirst("div.details h3")?.text() ?: "Unknown"
             }
         }
