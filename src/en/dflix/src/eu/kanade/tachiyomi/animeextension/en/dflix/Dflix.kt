@@ -13,7 +13,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
@@ -47,9 +46,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
         val calledData = client.newCall(req).execute()
         val document = calledData.use { it.asJsoup() }
-    
+
         val animeList = document.select("div.card a.cfocus").map { element ->
-            val card = element.parent() 
+            val card = element.parent()
             SAnime.create().apply {
                 setUrlWithoutDomain(element.attr("href"))
                 thumbnail_url = element.selectFirst("img")!!.attr("src")
@@ -87,7 +86,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     override fun animeDetailsParse(response: Response): SAnime {
         return response.parseAs<DetailsResponseDto>().toSAnime()
     }
+
     // ============================== Episodes ==============================
+
     private fun episodesRequest(totalEpisodes: String, id: String): List<SEpisode> {
         val request = GET("localhost", headers)
         val epResponse = client.newCall(request).execute()
