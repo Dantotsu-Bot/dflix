@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.animeextension.en.dflix
 
-import android.app.Application
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
