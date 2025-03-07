@@ -38,7 +38,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // =============================== Latest ===============================
 
-    override suspend fun getLatestAnime(page: Int): AnimesPage {
+    override suspend fun getLatestUpdates(page: Int): AnimesPage {
         val req = Request.Builder()
             .url("$baseUrl/m/recent/$page")
             .addHeader("Cookie", cookieHeader)
@@ -58,9 +58,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         return AnimesPage(animeList, hasNextPage = true)
     }
 
-    override fun latestAnimeParse(response: Response): AnimesPage = TODO()
+    override fun latestUpdatesParse(response: Response): AnimesPage = TODO()
 
-    override fun latestAnimeRequest(page: Int): Request = TODO()
+    override fun latestUpdatesRequest(page: Int): Request = TODO()
 
     // =============================== Search ===============================
 
@@ -82,60 +82,12 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // ============================== Episodes ==============================
 
-    private fun episodesRequest(totalEpisodes: String, id: String): List<SEpisode> {
-        val request = GET("localhost", headers)
-        val epResponse = client.newCall(request).execute()
-        val document = epResponse.asJsoup()
-        return document.select("a").map(::episodeFromElement)
-    }
+    override fun episodeListRequest(anime: SAnime): Request = TODO()
 
-    override fun episodeListParse(response: Response): List<SEpisode> {
-        val document = response.asJsoup()
-        val totalEpisodes = document.select(episodeListSelector()).last()!!.attr("ep_end")
-        val id = document.select("input#movie_id").attr("value")
-        return episodesRequest(totalEpisodes, id)
-    }
-
-    override fun episodeListSelector() = "ul#episode_page li a"
-
-    override fun episodeFromElement(element: Element): SEpisode {
-        val ep = element.selectFirst("div.name")!!.ownText().substringAfter(" ")
-        return SEpisode.create().apply {
-            setUrlWithoutDomain(element.attr("abs:href"))
-            episode_number = ep.toFloat()
-            name = "Episode $ep"
-        }
-    }
+    override fun episodeListParse(response: Response): List<SEpisode> = TODO()
 
     // ============================ Video Links =============================
 
-    override fun videoListParse(response: Response): List<Video> = throw UnsupportedOperationException()
+    override fun getVideoList(episode: SEpisode): List<Video> = TODO()
 
-    private fun getHosterVideos(className: String, serverUrl: String): List<Video> {
-        return emptyList()
-    }
-
-    override fun videoListSelector() = throw UnsupportedOperationException()
-
-    override fun videoFromElement(element: Element) = throw UnsupportedOperationException()
-
-    override fun videoUrlParse(document: Document) = throw UnsupportedOperationException()
-
-    // ============================= Utilities ==============================
-    private fun Document.getInfo(text: String): String? {
-        val base = selectFirst("p.type:has(span:containsOwn($text))") ?: return null
-        return base.select("a").eachText().joinToString("")
-            .ifBlank { base.ownText() }
-            .takeUnless(String::isBlank)
-    }
-
-    override fun List<Video>.sort(): List<Video> = throw UnsupportedOperationException()
-
-    private fun parseStatus(statusString: String): Int {
-        return when (statusString) {
-            "Ongoing" -> SAnime.ONGOING
-            "Completed" -> SAnime.COMPLETED
-            else -> SAnime.UNKNOWN
-        }
-    }
 }
