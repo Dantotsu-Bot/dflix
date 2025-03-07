@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
@@ -16,7 +16,7 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
+class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override val name = "Dflix"
 
@@ -24,75 +24,69 @@ class Dflix : AnimeCatalogueSource, ParsedAnimeHttpSource() {
 
     override val lang = "en"
 
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     val cm = CookieManager()
     val cookieHeader = cm.getCookiesHeaders()
 
-    override fun headersBuilder() = super.headersBuilder()
-        .add("Origin", baseUrl)
-        .add("Cookie", cookieHeader)
-        .add("Referer", "$baseUrl/")
-
-    private val preferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
     // ============================== Popular ===============================
-    override fun popularAnimeRequest(page: Int): Request = GET("$baseUrl/m/recent/$page", headers)
 
-    override fun popularAnimeSelector(): String = "div.card a.cfocus"
+    override suspend fun getPopularAnime(page: Int): AnimesPage = getLatestUpdates(page)
 
-    override fun popularAnimeFromElement(element: Element): SAnime = SAnime.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        thumbnail_url = element.selectFirst("img")!!.attr("src")
-        title = element.selectFirst("h3")!!.text()
-    }
+    override fun popularAnimeParse(response: Response): AnimesPage = TODO()
 
-    override fun popularAnimeNextPageSelector(): String = "div.card a.cfocus"
+    override fun popularAnimeRequest(page: Int): Request = TODO()
 
     // =============================== Latest ===============================
-    override fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException()
 
-    override fun latestUpdatesSelector(): String = throw UnsupportedOperationException()
+    override suspend fun getLatestAnime(page: Int): AnimesPage {
+        val req = Request.Builder()
+            .url("$baseUrl/m/recent/$page")
+            .addHeader("Cookie", cookieHeader)
+            .build()
 
-    override fun latestUpdatesFromElement(element: Element): SAnime = throw UnsupportedOperationException()
-
-    override fun latestUpdatesNextPageSelector(): String = throw UnsupportedOperationException()
-
-    // =============================== Search ===============================
-    override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request = throw UnsupportedOperationException()
-
-    override fun searchAnimeSelector(): String = throw UnsupportedOperationException()
-
-    override fun searchAnimeFromElement(element: Element): SAnime = throw UnsupportedOperationException()
-
-    override fun searchAnimeNextPageSelector(): String = throw UnsupportedOperationException()
-
-    // =========================== Anime Details ============================
-    override fun animeDetailsParse(document: Document): SAnime {
-        val infoDocument = document.selectFirst("div.anime-info a[href]")?.let {
-            client.newCall(GET(it.absUrl("href"), headers)).execute().asJsoup()
-        } ?: document
-
-        return SAnime.create().apply {
-            title = infoDocument.selectFirst("div.anime_info_body_bg > h1")!!.text()
-            genre = infoDocument.getInfo("Genre:")
-            status = parseStatus(infoDocument.getInfo("Status:").orEmpty())
-
-            description = buildString {
-                val summary = infoDocument.selectFirst("div.anime_info_body_bg > div.description")
-                append(summary?.text())
-
-                // add alternative name to anime description
-                infoDocument.getInfo("Other name:")?.also {
-                    if (isNotBlank()) append("\n\n")
-                    append("Other name(s): $it")
-                }
+        val calledData = client.newCall(req).execute()
+        val document = calledData.use { it.asJsoup() }
+    
+        val animeList = document.select("div.card a.cfocus").map { element ->
+            val card = element.parent() 
+            SAnime.create().apply {
+                setUrlWithoutDomain(element.attr("href"))
+                thumbnail_url = element.selectFirst("img")!!.attr("src")
+                title = card.selectFirst("div.details h3")!!.text()
             }
         }
+        return AnimesPage(animeList, hasNextPage = true)
     }
 
+    override fun latestAnimeParse(response: Response): AnimesPage = TODO()
+
+    override fun latestAnimeRequest(page: Int): Request = TODO()
+
+    // =============================== Search ===============================
+
+    override suspend fun getSearchAnime(page: Int, query: String, filters: AnimeFilterList): AnimesPage {
+        TODO()
+    }
+
+    override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request =
+        TODO()
+
+    override fun searchAnimeParse(response: Response): AnimesPage = TODO()
+
+    // =========================== Anime Details ============================
+    override fun getAnimeUrl(anime: SAnime): String {
+        val slug = anime.title.titleToSlug()
+        return "$baseUrl/show-details/$slug/${anime.url}"
+    }
+
+    override fun animeDetailsRequest(anime: SAnime): Request {
+        return GET("$apiUrl/drama?id=${anime.url}", apiHeaders)
+    }
+
+    override fun animeDetailsParse(response: Response): SAnime {
+        return response.parseAs<DetailsResponseDto>().toSAnime()
+    }
     // ============================== Episodes ==============================
     private fun episodesRequest(totalEpisodes: String, id: String): List<SEpisode> {
         val request = GET("localhost", headers)
