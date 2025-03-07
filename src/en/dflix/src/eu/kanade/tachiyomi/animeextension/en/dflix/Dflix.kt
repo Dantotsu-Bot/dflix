@@ -45,7 +45,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         }.build()
 
         val response = GET("$baseUrl/m/recent/$page", headers = headers)
-        val document = response.use { it.asJsoup() }
+        val document = response.body.use { responseBody ->
+            Jsoup.parse(responseBody.string())
+        }
 
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
@@ -55,6 +57,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 title = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
             }
         }
+
         return AnimesPage(animeList, hasNextPage = true)
     }
 
