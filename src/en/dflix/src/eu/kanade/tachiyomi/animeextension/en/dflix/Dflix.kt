@@ -45,9 +45,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         }.build()
 
         val response = GET("$baseUrl/m/recent/$page", headers = headers)
-        val document = response.body.use { responseBody ->
-            Jsoup.parse(responseBody.string())
-        }
+        val document = response.asJsoup()
 
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
