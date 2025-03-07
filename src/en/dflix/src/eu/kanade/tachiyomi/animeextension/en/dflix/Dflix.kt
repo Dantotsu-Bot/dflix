@@ -75,7 +75,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         }.build()
 
         val document = POST("$baseUrl/search", headers = headers, body = body)
-        
+
         return getLatestUpdates(page)
     }
 
