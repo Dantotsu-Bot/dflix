@@ -49,7 +49,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             SAnime.create().apply {
                 setUrlWithoutDomain(element.attr("href"))
                 thumbnail_url = element.selectFirst("img")!!.attr("src")
-                title = card.selectFirst("div.details h3")!!.text()
+                title = card.selectFirst("div.details h3")?.text() ?: "Unknown"
             }
         }
         return AnimesPage(animeList, hasNextPage = true)
@@ -85,5 +85,5 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // ============================ Video Links =============================
 
-    override fun getVideoList(episode: SEpisode): List<Video> = TODO()
+    override fun suspend getVideoList(episode: SEpisode): List<Video> = TODO()
 }
