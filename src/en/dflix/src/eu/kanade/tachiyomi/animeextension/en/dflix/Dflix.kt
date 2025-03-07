@@ -8,7 +8,11 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
+import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.GET
 import okhttp3.Request
+import okhttp3.FormBody
+import okhttp3.Headers
 import okhttp3.Response
 import uy.kohesive.injekt.api.get
 
@@ -36,13 +40,12 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =============================== Latest ===============================
 
     override suspend fun getLatestUpdates(page: Int): AnimesPage {
-        val req = Request.Builder()
-            .url("$baseUrl/m/recent/$page")
-            .addHeader("Cookie", cookieHeader)
-            .build()
+        val headers = Headers.Builder().apply {
+            add("Cookie", cookieHeader)
+        }.build()
 
-        val calledData = client.newCall(req).execute()
-        val document = calledData.use { it.asJsoup() }
+        val response = GET("$baseUrl/m/recent/$page", headers = headers)
+        val document = response.use { it.asJsoup() }
 
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
@@ -62,7 +65,16 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =============================== Search ===============================
 
     override suspend fun getSearchAnime(page: Int, query: String, filters: AnimeFilterList): AnimesPage {
-        TODO()
+        val body = FormBody.Builder().apply {
+            add("term", query)
+            add("types", "s")
+        }.build()
+
+      val headers = Headers.Builder().apply {
+          add("Cookie", cookieHeader)
+      }.build()
+
+    val document = POST("$baseUrl/search", headers = headers, body = body)
     }
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request =
@@ -71,7 +83,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     override fun searchAnimeParse(response: Response): AnimesPage = TODO()
 
     // =========================== Anime Details ============================
-    override fun getAnimeUrl(anime: SAnime): String = TODO()
+    override fun getAnimeUrl(anime: SAnime): String {
+        return baseUrl + anime.url
+    }
 
     override fun animeDetailsRequest(anime: SAnime): Request = TODO()
 
