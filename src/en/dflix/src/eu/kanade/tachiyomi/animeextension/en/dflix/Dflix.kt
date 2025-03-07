@@ -2,12 +2,14 @@ package eu.kanade.tachiyomi.animeextension.en.dflix
 
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
+import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
+import eu.kanade.tachiyomi.util.parseAs
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
@@ -73,18 +75,11 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     override fun searchAnimeParse(response: Response): AnimesPage = TODO()
 
     // =========================== Anime Details ============================
-    override fun getAnimeUrl(anime: SAnime): String {
-        val slug = anime.title.titleToSlug()
-        return "$baseUrl/show-details/$slug/${anime.url}"
-    }
+    override fun getAnimeUrl(anime: SAnime): String = TODO()
 
-    override fun animeDetailsRequest(anime: SAnime): Request {
-        return GET("$apiUrl/drama?id=${anime.url}", apiHeaders)
-    }
+    override fun animeDetailsRequest(anime: SAnime): Request = TODO()
 
-    override fun animeDetailsParse(response: Response): SAnime {
-        return response.parseAs<DetailsResponseDto>().toSAnime()
-    }
+    override fun animeDetailsParse(response: Response): SAnime = TODO()
 
     // ============================== Episodes ==============================
 
