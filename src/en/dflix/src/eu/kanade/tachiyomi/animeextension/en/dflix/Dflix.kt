@@ -7,12 +7,9 @@ import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
-import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
 import uy.kohesive.injekt.api.get
 
 class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
@@ -89,5 +86,4 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // ============================ Video Links =============================
 
     override fun getVideoList(episode: SEpisode): List<Video> = TODO()
-
 }
