@@ -77,9 +77,21 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             add("Cookie", cookieHeader)
         }.build()
 
-        val document = POST("$baseUrl/search", headers = headers, body = body)
+        val request = POST("$baseUrl/search", headers = headers, body = body)
+        val response = client.newCall(request).execute()
+        val document = response.asJsoup()
+        response.close()
 
-        return getLatestUpdates(page)
+        val animeList = document.select("div.moviesearchiteam a").map { element ->
+            val card = element.selectFirst("div.p-1")
+            SAnime.create().apply {
+                setUrlWithoutDomain(element.attr("href"))
+                thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
+                title = card?.selectFirst("div.searchtitle")?.text() ?: "Unknown"
+            }
+        }
+
+        return AnimesPage(animeList, hasNextPage = false)
     }
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request =
