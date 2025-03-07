@@ -44,9 +44,11 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             add("Cookie", cookieHeader)
         }.build()
 
-        val response = GET("$baseUrl/m/recent/$page", headers = headers)
-        val document = response.asJsoup()
+        val request = GET("$baseUrl/m/recent/$page", headers = headers)
+        val response = client.newCall(request).execute()
 
+        val document = response.asJsoup()
+        response.close()
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
             SAnime.create().apply {
