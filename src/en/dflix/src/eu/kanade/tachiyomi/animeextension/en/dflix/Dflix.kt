@@ -147,8 +147,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         }
     }
 
-    private fun getMediaType(doc: String): String? {
-            val document = Jsoup.parse(doc)
+    private fun getMediaType(document: Document): String? {
             val script = document.select("script")
             val scriptContent = script.html()
             if (scriptContent.contains("\"/m/lazyload/")) {
