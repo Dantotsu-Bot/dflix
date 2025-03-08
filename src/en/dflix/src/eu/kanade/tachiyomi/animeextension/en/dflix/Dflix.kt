@@ -40,7 +40,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         }.build()
     }
 
-    // ============================== Popular ===============================
+    // ============================== Too Popular ===============================
 
     override suspend fun getPopularAnime(page: Int): AnimesPage = getLatestUpdates(page)
 
