@@ -93,7 +93,20 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 SAnime.create().apply {
                     url = baseUrl + element.attr("href")
                     thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
-                    title = card?.selectFirst("div.searchtitle")?.text() ?: "Unknown"
+
+                    val baseTitle = card?.selectFirst("div.searchtitle")?.text() ?: "Unknown"
+
+                    // Only movies has 4k Quality tag
+                    title = if (type == "m") {
+                        val qualityText = card?.selectFirst("div.searchdetails")?.text() ?: ""
+                        if (qualityText.contains("4K", ignoreCase = true)) {
+                            "$baseTitle 4K"
+                        } else {
+                            baseTitle
+                        }
+                    } else {
+                        baseTitle
+                    }
                 }
             }
 
@@ -106,7 +119,6 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             val seriesDeferred = async { fetchAnimeByType("s") }
             Pair(moviesDeferred.await(), seriesDeferred.await())
         }
-
         val combinedResults = movies + series
 
         return AnimesPage(combinedResults, hasNextPage = false)
