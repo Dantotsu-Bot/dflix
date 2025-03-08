@@ -51,22 +51,24 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         return GET("$baseUrl/m/recent/$page", headers = headers)
     }
 
-    override fun latestUpdatesParse(response: Response): AnimesPage {
-        val document = response.asJsoup()
-        val animeList = document.select("div.card a.cfocus").map { element ->
-            val card = element.parent()
-            SAnime.create().apply {
-                url = baseUrl + element.attr("href")
-                thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
-                title = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
-
-                val posterTitle = card?.selectFirst("div.poster")?.attr("title") ?: ""
-                if (posterTitle.contains("4K", ignoreCase = true)) {
-                    title += " 4K"
+    override fun latestUpdatesParse(response: Response): AnimesPage {    
+        val document = response.asJsoup()    
+        val animeList = document.select("div.card a.cfocus").map { element ->    
+            val card = element.parent()    
+            SAnime.create().apply {    
+                url = baseUrl + element.attr("href")    
+                thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"    
+                val baseTitle = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
+                val posterElement = element.selectFirst("div.poster")
+                val posterTitle = posterElement?.attr("title") ?: ""
+                title = if (posterTitle.contains("4K", ignoreCase = true)) {
+                    "$baseTitle 4K"
+                } else {
+                    baseTitle
                 }
-            }
-        }
-        return AnimesPage(animeList, hasNextPage = true)
+            }    
+        }    
+        return AnimesPage(animeList, hasNextPage = true)    
     }
 
     // =============================== Search ===============================
