@@ -22,7 +22,7 @@ object CookieManager {
         cookies = try {
             CLIENT.newCall(request).execute().use { response ->
                 if (response.isRedirect) {
-                    response.headers("Set-Cookie").mapNotNull { Cookie.parse(cookieUrl, it) }
+                    response.headers("Set-Cookie").mapNotNull { Cookie.parse(COOKIE_URL, it) }
                 } else {
                     emptyList()
                 }
