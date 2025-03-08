@@ -50,7 +50,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =============================== Latest ===============================
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/m/recent/$page", headers = gHeaders)
+        return GET("$baseUrl/m/recent/$page", headers = cHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): AnimesPage {
@@ -82,7 +82,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 add("types", type)
             }.build()
 
-            val request = POST("$baseUrl/search", headers = gHeaders, body = body)
+            val request = POST("$baseUrl/search", headers = cHeaders, body = body)
             val response = client.newCall(request).execute()
             val document = response.asJsoup()
 
@@ -129,8 +129,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // =========================== Anime Details ============================
 
-    override fun animeDetailsRequest(anime: SAnime): Request = {
-        return GET(anime.url, headers = gHeaders)
+    override fun animeDetailsRequest(anime: SAnime): Request {
+        return GET(anime.url, headers = cHeaders)
     }
 
     override fun animeDetailsParse(response: Response): SAnime = TODO()
