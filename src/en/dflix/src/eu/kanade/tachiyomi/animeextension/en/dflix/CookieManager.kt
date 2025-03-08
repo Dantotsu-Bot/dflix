@@ -6,23 +6,28 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
-object CookieManager {
-    private val COOKIE_URL = "https://dflix.discoveryftp.net/login/demo".toHttpUrl()
+class CookieManager {
+    private val cookieUrl = "https://dflix.discoveryftp.net/login/demo".toHttpUrl()
 
-    private val CLIENT: OkHttpClient = OkHttpClient.Builder()
+    private val client = OkHttpClient.Builder()
         .followRedirects(false)
         .build()
 
+    @Volatile
     private var cookies: List<Cookie>? = null
 
-    private fun fetchCookies(): List<Cookie> {
-        if (cookies != null) return cookies!!
+    private fun getCookiesSafe(): List<Cookie> {
+        return cookies ?: synchronized(this) {
+            cookies ?: fetchCookies().also { cookies = it }
+        }
+    }
 
-        val request = Request.Builder().url(COOKIE_URL).build()
-        cookies = try {
-            CLIENT.newCall(request).execute().use { response ->
+    private fun fetchCookies(): List<Cookie> {
+        val request = Request.Builder().url(cookieUrl).build()
+        return try {
+            client.newCall(request).execute().use { response ->
                 if (response.isRedirect) {
-                    response.headers("Set-Cookie").mapNotNull { Cookie.parse(COOKIE_URL, it) }
+                    response.headers("Set-Cookie").mapNotNull { Cookie.parse(cookieUrl, it) }
                 } else {
                     emptyList()
                 }
@@ -31,9 +36,7 @@ object CookieManager {
             println("Failed to fetch cookies: ${e.message}")
             emptyList()
         }
-
-        return cookies!!
     }
 
-    fun getCookiesHeaders(): String = fetchCookies().joinToString("; ") { "${it.name}=${it.value}" }
+    fun getCookiesHeaders(): String = getCookiesSafe().joinToString("; ") { "${it.name}=${it.value}" }
 }
