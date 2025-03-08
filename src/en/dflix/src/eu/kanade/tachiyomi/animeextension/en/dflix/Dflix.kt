@@ -30,8 +30,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override val supportsLatest = true
 
-    //val cm = CookieManager()
-    //val cookieHeader = cm.getCookiesHeaders()
+    // val cm = CookieManager()
+    // val cookieHeader = cm.getCookiesHeaders()
 
     val cHeaders: Headers by lazy {
         Headers.Builder().apply {
