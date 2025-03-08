@@ -10,6 +10,10 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.FormBody
 import okhttp3.Headers
 import okhttp3.Request
@@ -67,31 +71,42 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // =============================== Search ===============================
 
-    override suspend fun getSearchAnime(page: Int, query: String, filters: AnimeFilterList): AnimesPage {
-        val body = FormBody.Builder().apply {
-            add("term", query)
-            add("types", "s")
-        }.build()
-
         val headers = Headers.Builder().apply {
             add("Cookie", cookieHeader)
         }.build()
 
-        val request = POST("$baseUrl/search", headers = headers, body = body)
-        val response = client.newCall(request).execute()
-        val document = response.asJsoup()
-        response.close()
+        suspend fun fetchAnimeByType(type: String): List<SAnime> = withContext(Dispatchers.IO) {
+            val body = FormBody.Builder().apply {
+                add("term", query)
+                add("types", type)
+            }.build()
 
-        val animeList = document.select("div.moviesearchiteam a").map { element ->
-            val card = element.selectFirst("div.p-1")
-            SAnime.create().apply {
-                setUrlWithoutDomain(element.attr("href"))
-                thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
-                title = card?.selectFirst("div.searchtitle")?.text() ?: "Unknown"
+            val request = POST("$baseUrl/search", headers = headers, body = body)
+            val response = client.newCall(request).execute()
+            val document = response.asJsoup()
+
+            val animeList = document.select("div.moviesearchiteam a").map { element ->
+                val card = element.selectFirst("div.p-1")
+                SAnime.create().apply {
+                    setUrlWithoutDomain(element.attr("href"))
+                    thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
+                    title = card?.selectFirst("div.searchtitle")?.text() ?: "Unknown"
+                }
             }
+
+            response.close()
+            animeList
         }
 
-        return AnimesPage(animeList, hasNextPage = false)
+        val (movies, series) = coroutineScope {
+            val moviesDeferred = async { fetchAnimeByType("m") }
+            val seriesDeferred = async { fetchAnimeByType("s") }
+            Pair(moviesDeferred.await(), seriesDeferred.await())
+        }
+
+        val combinedResults = movies + series
+
+        return AnimesPage(combinedResults, hasNextPage = false)
     }
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request =
