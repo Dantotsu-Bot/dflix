@@ -148,14 +148,14 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     }
 
     private fun getMediaType(document: Document): String? {
-       val script = document.select("script")
-       val scriptContent = script.html()
-       if (scriptContent.contains("\"/m/lazyload/")) {
-           return "m"
-       } else if (scriptContent.contains("\"/s/lazyload/")) {
-           return "s"
-       }
-       return null
+        val script = document.select("script")
+        val scriptContent = script.html()
+        if (scriptContent.contains("\"/m/lazyload/")) {
+            return "m"
+        } else if (scriptContent.contains("\"/s/lazyload/")) {
+            return "s"
+        }
+        return null
     }
 
     private fun getMovieDetails(document: Document): SAnime {
