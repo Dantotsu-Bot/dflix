@@ -7,9 +7,9 @@ import okhttp3.Request
 import java.io.IOException
 
 object CookieManager {
-    private val cookieUrl = "https://dflix.discoveryftp.net/login/demo".toHttpUrl()
+    private val COOKIE_URL = "https://dflix.discoveryftp.net/login/demo".toHttpUrl()
 
-    private val client: OkHttpClient = OkHttpClient.Builder()
+    private val CLIENT: OkHttpClient = OkHttpClient.Builder()
         .followRedirects(false)
         .build()
 
@@ -18,9 +18,9 @@ object CookieManager {
     private fun fetchCookies(): List<Cookie> {
         if (cookies != null) return cookies!!
 
-        val request = Request.Builder().url(cookieUrl).build()
+        val request = Request.Builder().url(COOKIE_URL).build()
         cookies = try {
-            client.newCall(request).execute().use { response ->
+            CLIENT.newCall(request).execute().use { response ->
                 if (response.isRedirect) {
                     response.headers("Set-Cookie").mapNotNull { Cookie.parse(cookieUrl, it) }
                 } else {
