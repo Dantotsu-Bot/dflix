@@ -51,13 +51,13 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         return GET("$baseUrl/m/recent/$page", headers = headers)
     }
 
-    override fun latestUpdatesParse(response: Response): AnimesPage {    
-        val document = response.asJsoup()    
-        val animeList = document.select("div.card a.cfocus").map { element ->    
-            val card = element.parent()    
-            SAnime.create().apply {    
-                url = baseUrl + element.attr("href")    
-                thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"    
+    override fun latestUpdatesParse(response: Response): AnimesPage {
+        val document = response.asJsoup()
+        val animeList = document.select("div.card a.cfocus").map { element ->
+            val card = element.parent()
+            SAnime.create().apply {
+                url = baseUrl + element.attr("href")
+                thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
                 val baseTitle = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
                 val posterElement = element.selectFirst("div.poster")
                 val posterTitle = posterElement?.attr("title") ?: ""
@@ -66,9 +66,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 } else {
                     baseTitle
                 }
-            }    
-        }    
-        return AnimesPage(animeList, hasNextPage = true)    
+            }
+        }
+        return AnimesPage(animeList, hasNextPage = true)
     }
 
     // =============================== Search ===============================
