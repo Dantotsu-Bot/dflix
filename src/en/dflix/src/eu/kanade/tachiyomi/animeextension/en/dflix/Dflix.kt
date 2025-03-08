@@ -130,7 +130,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =========================== Anime Details ============================
 
     override fun animeDetailsRequest(anime: SAnime): Request = {
-      return GET(anime.url, headers = gHeaders)
+        return GET(anime.url, headers = gHeaders)
     }
 
     override fun animeDetailsParse(response: Response): SAnime = TODO()
