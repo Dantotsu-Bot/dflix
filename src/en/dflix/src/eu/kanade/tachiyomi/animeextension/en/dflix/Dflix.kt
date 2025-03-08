@@ -55,14 +55,15 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val document = response.asJsoup()
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
-            val posterTitle = card?.selectFirst("div.poster")?.attr("title") ?: ""
-            val baseTitle = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
-            val title = if ("4K" in posterTitle) "$baseTitle 4K" else baseTitle
-
             SAnime.create().apply {
                 url = baseUrl + element.attr("href")
                 thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
-                this.title = title
+                title = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
+
+                val posterTitle = card?.selectFirst("div.poster")?.attr("title") ?: ""
+                if (posterTitle.contains("4K", ignoreCase = true)) {
+                    title += " 4K"
+                }
             }
         }
         return AnimesPage(animeList, hasNextPage = true)
