@@ -19,7 +19,6 @@ import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
-import org.jsoup.Jsoup
 import uy.kohesive.injekt.api.get
 
 class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
@@ -148,7 +147,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         }
     }
 
-    private fun getMediaType(document: Document): Char? {
+    private fun getMediaType(document: Document): String? {
         val scriptContent = document.select("script:contains($.ajax)").firstOrNull()?.html() ?: return null
         return when {
             scriptContent.contains("\"/m/lazyload/") -> 'm'
