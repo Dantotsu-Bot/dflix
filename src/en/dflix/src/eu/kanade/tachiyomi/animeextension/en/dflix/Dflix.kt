@@ -150,8 +150,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     private fun getMediaType(document: Document): String? {
         val scriptContent = document.select("script:contains($.ajax)").firstOrNull()?.html() ?: return null
         return when {
-            scriptContent.contains("\"/m/lazyload/") -> 'm'
-            scriptContent.contains("\"/s/lazyload/") -> 's'
+            scriptContent.contains("\"/m/lazyload/") -> "m"
+            scriptContent.contains("\"/s/lazyload/") -> "s"
             else -> null
         }
     }
