@@ -32,7 +32,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     private val cm = CookieManager()
 
-    private val cookieHeader = getCookiesHeaders()
+    private val cookieHeader = cm.getCookiesHeaders()
 
     private val cHeaders: Headers by lazy {
         Headers.Builder().apply {
