@@ -56,7 +56,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
             SAnime.create().apply {
-                url = baseUrl + element.attr("href")
+                url = element.attr("href")
                 thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
                 val baseTitle = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
                 val posterElement = element.selectFirst("div.poster")
@@ -91,7 +91,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             val animeList = document.select("div.moviesearchiteam a").map { element ->
                 val card = element.selectFirst("div.p-1")
                 SAnime.create().apply {
-                    url = baseUrl + element.attr("href")
+                    url = element.attr("href")
                     thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
 
                     val baseTitle = card?.selectFirst("div.searchtitle")?.text() ?: "Unknown"
