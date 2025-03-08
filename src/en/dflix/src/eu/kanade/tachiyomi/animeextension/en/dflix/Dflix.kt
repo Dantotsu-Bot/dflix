@@ -71,6 +71,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // =============================== Search ===============================
 
+    override suspend fun getSearchAnime(page: Int, query: String, filters: AnimeFilterList): AnimesPage {
         val headers = Headers.Builder().apply {
             add("Cookie", cookieHeader)
         }.build()
