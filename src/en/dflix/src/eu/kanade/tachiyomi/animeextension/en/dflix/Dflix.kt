@@ -134,7 +134,50 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         return GET(anime.url, headers = cHeaders)
     }
 
-    override fun animeDetailsParse(response: Response): SAnime = TODO()
+    override fun animeDetailsParse(response: Response): SAnime {
+        val document = response.asJsoup()
+
+        val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
+
+        return when (type) {
+            "m" -> getMovieDetails(document)
+            "s" -> getSeriesDetails(document)
+            else -> throw IllegalArgumentException("Unsupported media type: $type")
+        }
+    }
+
+    private fun getMediaType(document: Document): Char? {
+        val scriptContent = document.select("script:contains($.ajax)").firstOrNull()?.html() ?: return null
+        return when {
+            scriptContent.contains("\"/m/lazyload/") -> 'm'
+            scriptContent.contains("\"/s/lazyload/") -> 's'
+            else -> null
+        }
+    }
+
+    private fun getMovieDetails(document: Document): SAnime {
+        return SAnime.create().apply {
+            status = 2
+            val thumbString = document.select("figure.movie-detail-banner img").attr("src")
+            thumbnail_url = thumbString.replace(" ", "%20")
+            val genreElements = document.select("div.ganre-wrapper a")
+            val genreList = genreElements.map { it.text().replace(",", "").trim() }
+            genre = genreList.joinToString(", ")
+            description = document.select("p.storyline").text().trim()
+        }
+    }
+
+    private fun getSeriesDetails(document: Document): SAnime {
+        return SAnime.create().apply {
+            status = 0
+            val thumbString = document.select("div.movie-detail-banner img").attr("src")
+            thumbnail_url = thumbString.replace(" ", "%20")
+            val genreElements = document.select("div.ganre-wrapper a")
+            val genreList = genreElements.map { it.text().replace(",", "").trim() }
+            genre = genreList.joinToString(", ")
+            description = document.select("p.storyline").text().trim()
+        }
+    }
 
     // ============================== Episodes ==============================
 
