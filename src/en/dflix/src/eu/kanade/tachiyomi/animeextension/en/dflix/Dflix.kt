@@ -33,6 +33,12 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     val cm = CookieManager()
     val cookieHeader = cm.getCookiesHeaders()
 
+    val cHeaders: Headers by lazy {
+        Headers.Builder().apply {
+            add("Cookie", cookieHeader)
+        }.build()
+    }
+
     // ============================== Popular ===============================
 
     override suspend fun getPopularAnime(page: Int): AnimesPage = getLatestUpdates(page)
@@ -44,11 +50,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =============================== Latest ===============================
 
     override fun latestUpdatesRequest(page: Int): Request {
-        val headers = Headers.Builder().apply {
-            add("Cookie", cookieHeader)
-        }.build()
-
-        return GET("$baseUrl/m/recent/$page", headers = headers)
+        return GET("$baseUrl/m/recent/$page", headers = gHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): AnimesPage {
@@ -56,7 +58,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
             SAnime.create().apply {
-                url = element.attr("href")
+                url = baseUrl + element.attr("href")
                 thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
                 val baseTitle = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
                 val posterElement = element.selectFirst("div.poster")
@@ -74,24 +76,20 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =============================== Search ===============================
 
     override suspend fun getSearchAnime(page: Int, query: String, filters: AnimeFilterList): AnimesPage {
-        val headers = Headers.Builder().apply {
-            add("Cookie", cookieHeader)
-        }.build()
-
         suspend fun fetchAnimeByType(type: String): List<SAnime> = withContext(Dispatchers.IO) {
             val body = FormBody.Builder().apply {
                 add("term", query)
                 add("types", type)
             }.build()
 
-            val request = POST("$baseUrl/search", headers = headers, body = body)
+            val request = POST("$baseUrl/search", headers = gHeaders, body = body)
             val response = client.newCall(request).execute()
             val document = response.asJsoup()
 
             val animeList = document.select("div.moviesearchiteam a").map { element ->
                 val card = element.selectFirst("div.p-1")
                 SAnime.create().apply {
-                    url = element.attr("href")
+                    url = baseUrl + element.attr("href")
                     thumbnail_url = element.selectFirst("img")?.attr("src") ?: "localhost"
 
                     val baseTitle = card?.selectFirst("div.searchtitle")?.text() ?: "Unknown"
@@ -130,11 +128,10 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     override fun searchAnimeParse(response: Response): AnimesPage = TODO()
 
     // =========================== Anime Details ============================
-    override fun getAnimeUrl(anime: SAnime): String {
-        return baseUrl + anime.url
-    }
 
-    override fun animeDetailsRequest(anime: SAnime): Request = TODO()
+    override fun animeDetailsRequest(anime: SAnime): Request = {
+      return GET(anime.url, headers = gHeaders)
+    }
 
     override fun animeDetailsParse(response: Response): SAnime = TODO()
 
