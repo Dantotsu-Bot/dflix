@@ -43,16 +43,16 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // =============================== Latest ===============================
 
-    override suspend fun getLatestUpdates(page: Int): AnimesPage {
+    override fun latestUpdatesRequest(page: Int): Request {
         val headers = Headers.Builder().apply {
             add("Cookie", cookieHeader)
         }.build()
 
-        val request = GET("$baseUrl/m/recent/$page", headers = headers)
-        val response = client.newCall(request).execute()
+        return GET("$baseUrl/m/recent/$page", headers = headers)
+    }
 
+    override fun latestUpdatesParse(response: Response): AnimesPage {
         val document = response.asJsoup()
-        response.close()
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
             SAnime.create().apply {
@@ -61,13 +61,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 title = card?.selectFirst("div.details h3")?.text() ?: "Unknown"
             }
         }
-
         return AnimesPage(animeList, hasNextPage = true)
     }
-
-    override fun latestUpdatesParse(response: Response): AnimesPage = TODO()
-
-    override fun latestUpdatesRequest(page: Int): Request = TODO()
 
     // =============================== Search ===============================
 
