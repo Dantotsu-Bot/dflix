@@ -136,9 +136,9 @@ class Dflix : AnimeCatalogueSource {
         val script = document.select("script")
         val scriptContent = script.html()
         return when {
-           (scriptContent.contains("\"/m/lazyload/")) -> "m"
-           (scriptContent.contains("\"/s/lazyload/")) -> "s"
-           else -> null
+            (scriptContent.contains("\"/m/lazyload/")) -> "m"
+            (scriptContent.contains("\"/s/lazyload/")) -> "s"
+            else -> null
         }
     }
 
