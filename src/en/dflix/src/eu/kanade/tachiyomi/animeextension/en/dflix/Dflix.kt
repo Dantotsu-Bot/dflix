@@ -183,17 +183,28 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // ============================== Episodes ==============================
 
-    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> {
+    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = GET(anime.url, headers = cHeaders)
-        val response = client.newCall(request).execute()
-        val document = response.asJsoup()
-
+        val document = client.newCall(request).execute().asJsoup()
+    
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
 
         if (type == "m") {
             return getMovieMedia(document)
         } else {
-            return TODO()
+            val seasonLinks = document.select("tbody tr th.card a[href^='/s/view/']")
+                .map { it.attr("href") }
+                .reversed()
+
+            val episodeList = seasonLinks.map { link ->
+                async {
+                    val seasonRequest = GET("$baseUrl$link", headers = cHeaders)
+                    val seasonDocument = client.newCall(seasonRequest).execute().asJsoup()
+                    extractEpisode(seasonDocument)
+                }
+            }.awaitAll()
+
+            return sortEpisodes(episodeList.reversed())
         }
     }
 
@@ -259,8 +270,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         return episodeList
     }
 
-    private fun parseEpisodeNumbers(episodes: List<EpisodeData>): List<EpisodeData> {
-        val result = mutableListOf<EpisodeData>()
+    private fun sortEpisodes(episodes: List<EpisodeData>): List<SEpisode> {
+        val result = mutableListOf<SEpisode>()
         var lastEpisode = 0
         var lastSeason = 0
         for (epInfo in episodes) {
@@ -277,7 +288,14 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 }
                 else -> (++lastEpisode).toFloat()
             }
-            result.add(epInfo.copy(episode = episodeNumber))
+            result.add(
+            SEpisode.create().apply {
+                url = epInfo.videoUrl ?: ""
+                name = epInfo.seasonEpisode + " " + epInfo.episodeName
+                episode_number = episodeNumber
+                scanlator = epInfo.quality " • " + (epInfo.size ?: "")
+            },
+          )
             lastSeason = season
         }
         return result
@@ -289,6 +307,5 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val size: String,
         val episodeName: String,
         val quality: String,
-        val episode: Float? = null,
     )
 }
