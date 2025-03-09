@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.defaultUserAgentProvider
 import eu.kanade.tachiyomi.util.asJsoup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -38,7 +39,10 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     private val cHeaders: Headers by lazy {
         Headers.Builder().apply {
+            add("Accept", "*/*")
             add("Cookie", cookieHeader)
+            add("Referer", "$baseUrl/")
+            add("User-Agent", defaultUserAgentProvider())
         }.build()
     }
 
@@ -88,6 +92,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             val request = POST("$baseUrl/search", headers = cHeaders, body = body)
             val response = client.newCall(request).execute()
             val document = response.asJsoup()
+            response.close()
 
             val animeList = document.select("div.moviesearchiteam a").map { element ->
                 val card = element.selectFirst("div.p-1")
@@ -186,8 +191,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = GET(anime.url, headers = cHeaders)
-        val response = client.newCall(request).execute().asJsoup()
+        val response = client.newCall(request).execute()
         val document = response.asJsoup()
+        response.close()
 
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
 
@@ -202,8 +208,9 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 seasonLinks.map { link ->
                     async {
                         val seasonRequest = GET("$baseUrl$link", headers = cHeaders)
-                        val seasonResponse = client.newCall(seasonRequest).execute()
-                        extractEpisode(seasonResponse.asJsoup())
+                        val seasonResponse = client.newCall(seasonRequest).execute().use { seasonResponse ->
+                            extractEpisode(seasonResponse.asJsoup())
+                        }
                     }
                 }.awaitAll().flatten().let { sortEpisodes(it) }
             }
