@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.util.asJsoup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
@@ -190,7 +191,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
 
         if (type == "m") {
-            return getMovieMedia(document)
+            getMovieMedia(document)
         } else {
             val seasonLinks = document.select("tbody tr th.card a[href^='/s/view/']")
                 .map { it.attr("href") }
@@ -203,8 +204,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                     extractEpisode(seasonDocument)
                 }
             }.awaitAll()
-
-            return sortEpisodes(episodeList.reversed())
+            sortEpisodes(episodeList.reversed())
         }
     }
 
