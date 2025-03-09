@@ -191,11 +191,10 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
 
         if (type = "m") {
-          return getMovieMedia(document)
+            return getMovieMedia(document)
         } else {
-          return null
+            return null
         }
-
     }
 
     override fun episodeListRequest(anime: SAnime): Request = TODO()
@@ -211,7 +210,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 videoUrl = episode.url ?: ""
                 episode_number = 1
                 quality = episode.scanlator ?: ""
-            }
+            },
         )
     }
 
@@ -227,7 +226,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 name = "Movie"
                 episode_number = 1
                 scanlator = qualitySize ?: ""
-            }
+            },
         )
     }
 
@@ -241,8 +240,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             val seasonEpisode = rawSeasonEpisode.split("&nbsp;").first().trim()
             val videoUrl = container.select("h5 a").attr("href").trim()?.text()?.replace(" ", "%20")
             val size = container.select("h5 .badge-fill").text()
-                    .replace(Regex(".*\\s(\\d+\\.\\d+\\s+MB)$"), "$1")
-                    .trim()
+                .replace(Regex(".*\\s(\\d+\\.\\d+\\s+MB)$"), "$1")
+                .trim()
             val episodeName = container.select("h4").first()?.ownText()?.trim() ?: ""
             val quality = container.select("h4 .badge-outline").first()?.text()?.trim() ?: ""
 
@@ -254,7 +253,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                         size = size,
                         episodeName = episodeName,
                         quality = quality
-                    )
+                    ),
                 )
             }
         }
