@@ -187,7 +187,6 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // ============================== Episodes ==============================
 
-        }
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = GET(anime.url, headers = cHeaders)
         val response = client.newCall(request).execute()
