@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
-import eu.kanade.tachiyomi.network.defaultUserAgentProvider
 import eu.kanade.tachiyomi.util.asJsoup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -42,7 +41,6 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             add("Accept", "*/*")
             add("Cookie", cookieHeader)
             add("Referer", "$baseUrl/")
-            add("User-Agent", defaultUserAgentProvider())
         }.build()
     }
 
