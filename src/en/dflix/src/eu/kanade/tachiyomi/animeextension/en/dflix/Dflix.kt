@@ -190,10 +190,10 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
 
-        if (type = "m") {
+        if (type == "m") {
             return getMovieMedia(document)
         } else {
-            return null
+            return TODO()
         }
     }
 
@@ -205,26 +205,25 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
         return listOf(
-            Video.create().apply {
-                url = episode.url ?: ""
-                videoUrl = episode.url ?: ""
-                episode_number = 1
-                quality = episode.scanlator ?: ""
-            },
+            Video(
+                url = episode.url ?: "",
+                videoUrl = episode.url ?: "",
+                quality = episode.scanlator ?: "",
+            ),
         )
     }
 
     // ============================= Utilities ==============================
 
     private fun getMovieMedia(document: Document): List<SEpisode> {
-        val videoLink = document.select("div.col-md-12 a.btn").last()?.attr("href")?.text()?.replace(" ", "%20")
-        val qualitySize = document.select(".badge-wrapper .badge-fill").lastOrNull()?.text()?.replace("|", "•")
+        val videoLink = document.select("div.col-md-12 a.btn").last()?.attr("href")?.toString()?.replace(" ", "%20")
+        val qualitySize = document.select(".badge-wrapper .badge-fill").lastOrNull()?.toString()?.replace("|", "•")
 
         return listOf(
             SEpisode.create().apply {
                 url = videoLink ?: ""
                 name = "Movie"
-                episode_number = 1
+                episode_number = 1.0
                 scanlator = qualitySize ?: ""
             },
         )
@@ -238,16 +237,16 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         episodeContainers.forEach { container ->
             val rawSeasonEpisode = container.select("h5").first()?.ownText()?.trim() ?: ""
             val seasonEpisode = rawSeasonEpisode.split("&nbsp;").first().trim()
-            val videoUrl = container.select("h5 a").attr("href").trim()?.text()?.replace(" ", "%20")
+            val videoUrl = container.select("h5 a").attr("href").trim()?.toString()?.replace(" ", "%20")
             val size = container.select("h5 .badge-fill").text()
                 .replace(Regex(".*\\s(\\d+\\.\\d+\\s+MB)$"), "$1")
                 .trim()
             val episodeName = container.select("h4").first()?.ownText()?.trim() ?: ""
-            val quality = container.select("h4 .badge-outline").first()?.text()?.trim() ?: ""
+            val quality = container.select("h4 .badge-outline").first()?.toString()?.trim() ?: ""
 
             if (seasonEpisode.isNotEmpty() && videoUrl.isNotEmpty()) {
                 episodeDataList.add(
-                    EpisodeInfo(
+                    EpisodeData(
                         seasonEpisode = seasonEpisode,
                         videoUrl = videoUrl,
                         size = size,
@@ -261,7 +260,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     }
 
     private fun parseEpisodeNumbers(episodes: List<EpisodeData>): List<EpisodeData> {
-        val result = mutableListOf<EpisodeInfo>()
+        val result = mutableListOf<EpisodeData>()
         var lastEpisode = 0
         var lastSeason = 0
         for (epInfo in episodes) {
