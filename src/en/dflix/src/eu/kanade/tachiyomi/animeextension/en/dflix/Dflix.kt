@@ -183,7 +183,20 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // ============================== Episodes ==============================
 
-    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = TODO()
+    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> {
+        val request = GET(anime.url, headers = cHeaders)
+        val response = client.newCall(request).execute()
+        val document = response.asJsoup()
+
+        val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
+
+        if (type = "m") {
+          return getMovieMedia(document)
+        } else {
+          return null
+        }
+
+    }
 
     override fun episodeListRequest(anime: SAnime): Request = TODO()
 
@@ -191,5 +204,94 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // ============================ Video Links =============================
 
-    override suspend fun getVideoList(episode: SEpisode): List<Video> = TODO()
+    override suspend fun getVideoList(episode: SEpisode): List<Video> {
+        return listOf(
+            Video.create().apply {
+                url = episode.url ?: ""
+                videoUrl = episode.url ?: ""
+                episode_number = 1
+                quality = episode.scanlator ?: ""
+            }
+        )
+    }
+
+    // ============================= Utilities ==============================
+
+    private fun getMovieMedia(document: Document): List<SEpisode> {
+        val videoLink = document.select("div.col-md-12 a.btn").last()?.attr("href")?.text()?.replace(" ", "%20")
+        val qualitySize = document.select(".badge-wrapper .badge-fill").lastOrNull()?.text()?.replace("|", "•")
+
+        return listOf(
+            SEpisode.create().apply {
+                url = videoLink ?: ""
+                name = "Movie"
+                episode_number = 1
+                scanlator = qualitySize ?: ""
+            }
+        )
+    }
+
+    private fun extractEpisodeInfo(document: Document): List<EpisodeData> {
+        val episodeInfoList = mutableListOf<EpisodeInfo>()
+
+        val episodeContainers = document.select("div.container > div > div.card")
+
+        episodeContainers.forEach { container ->
+            val rawSeasonEpisode = container.select("h5").first()?.ownText()?.trim() ?: ""
+            val seasonEpisode = rawSeasonEpisode.split("&nbsp;").first().trim()
+            val videoUrl = container.select("h5 a").attr("href").trim()?.text()?.replace(" ", "%20")
+            val size = container.select("h5 .badge-fill").text()
+                    .replace(Regex(".*\\s(\\d+\\.\\d+\\s+MB)$"), "$1")
+                    .trim()
+            val episodeName = container.select("h4").first()?.ownText()?.trim() ?: ""
+            val quality = container.select("h4 .badge-outline").first()?.text()?.trim() ?: ""
+
+            if (seasonEpisode.isNotEmpty() && videoUrl.isNotEmpty()) {
+                episodeDataList.add(
+                    EpisodeInfo(
+                        seasonEpisode = seasonEpisode,
+                        videoUrl = videoUrl,
+                        size = size,
+                        episodeName = episodeName,
+                        quality = quality
+                    )
+                )
+            }
+        }
+        return episodeInfoList
+    }
+
+    private fun parseEpisodeNumbers(episodes: List<EpisodeData>): List<EpisodeData> {
+        val result = mutableListOf<EpisodeInfo>()
+        var lastEpisode = 0
+        var lastSeason = 0
+        for (epInfo in episodes) {
+            val seasonMatch = Regex("S(\\d+)").find(epInfo.seasonEpisode)
+            val episodeMatch = Regex("EP (\\d+)").find(epInfo.seasonEpisode)
+            val season = seasonMatch?.groupValues?.get(1)?.toInt() ?: lastSeason
+            val episode = episodeMatch?.groupValues?.get(1)?.toInt()
+            val episodeNumber = when {
+                season == 0 && episode != null -> episode / 10f
+                episode != null -> {
+                    if (season > lastSeason) lastEpisode++
+                    lastEpisode = if (season > lastSeason) lastEpisode else lastEpisode + 1
+                    lastEpisode.toFloat()
+                }
+                else -> (++lastEpisode).toFloat()
+            }
+            result.add(epInfo.copy(episode = episodeNumber))
+            lastSeason = season
+        }
+        return result
+    }
+
+    data class EpisodeData(
+        val seasonEpisode: String,
+        val videoUrl: String,
+        val size: String,
+        val episodeName: String,
+        val quality: String,
+        val episode: Float? = null
+    )
+
 }
