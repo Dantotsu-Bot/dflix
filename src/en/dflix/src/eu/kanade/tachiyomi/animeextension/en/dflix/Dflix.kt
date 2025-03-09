@@ -186,7 +186,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = GET(anime.url, headers = cHeaders)
         val document = client.newCall(request).execute().asJsoup()
-    
+
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
 
         if (type == "m") {
@@ -289,13 +289,13 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 else -> (++lastEpisode).toFloat()
             }
             result.add(
-            SEpisode.create().apply {
-                url = epInfo.videoUrl ?: ""
-                name = epInfo.seasonEpisode + " " + epInfo.episodeName
-                episode_number = episodeNumber
-                scanlator = epInfo.quality + " • " + (epInfo.size ?: "")
-            },
-          )
+                SEpisode.create().apply {
+                    url = epInfo.videoUrl ?: ""
+                    name = epInfo.seasonEpisode + " " + epInfo.episodeName
+                    episode_number = episodeNumber
+                    scanlator = epInfo.quality + " • " + (epInfo.size ?: "")
+                },
+            )
             lastSeason = season
         }
         return result
