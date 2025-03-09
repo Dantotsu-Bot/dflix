@@ -204,7 +204,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                     extractEpisode(seasonDocument)
                 }
             }.awaitAll().flatten()
-            sortEpisodes(episodeList.reversed())
+            sortEpisodes(episodeList)
         }
     }
 
@@ -298,7 +298,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             )
             lastSeason = season
         }
-        return result
+        return result.reversed()
     }
 
     data class EpisodeData(
