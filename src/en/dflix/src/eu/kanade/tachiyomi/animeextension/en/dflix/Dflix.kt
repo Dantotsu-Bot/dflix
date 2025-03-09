@@ -292,5 +292,4 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val quality: String,
         val episode: Float? = null
     )
-
 }
