@@ -217,35 +217,35 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     private fun getMovieMedia(document: Document): List<SEpisode> {
         val videoLink = document.select("div.col-md-12 a.btn").last()?.attr("href")?.toString()?.replace(" ", "%20")
-        val qualitySize = document.select(".badge-wrapper .badge-fill").lastOrNull()?.toString()?.replace("|", "•")
+        val qualitySize = document.select(".badge-wrapper .badge-fill").lastOrNull()?.text()?.replace("|", "•")
 
         return listOf(
             SEpisode.create().apply {
                 url = videoLink ?: ""
                 name = "Movie"
-                episode_number = 1.0
+                episode_number = 1.0f
                 scanlator = qualitySize ?: ""
             },
         )
     }
 
-    private fun extractEpisodeInfo(document: Document): List<EpisodeData> {
-        val episodeInfoList = mutableListOf<EpisodeInfo>()
+    private fun extractEpisode(document: Document): List<EpisodeData> {
+        val episodeList = mutableListOf<EpisodeData>()
 
         val episodeContainers = document.select("div.container > div > div.card")
 
         episodeContainers.forEach { container ->
             val rawSeasonEpisode = container.select("h5").first()?.ownText()?.trim() ?: ""
-            val seasonEpisode = rawSeasonEpisode.split("&nbsp;").first().trim()
-            val videoUrl = container.select("h5 a").attr("href").trim()?.toString()?.replace(" ", "%20")
+            val seasonEpisode = rawSeasonEpisode.split("&nbsp;").first().trim() ?: ""
+            val videoUrl = container.select("h5 a").attr("href").trim() ?: ""
             val size = container.select("h5 .badge-fill").text()
                 .replace(Regex(".*\\s(\\d+\\.\\d+\\s+MB)$"), "$1")
                 .trim()
             val episodeName = container.select("h4").first()?.ownText()?.trim() ?: ""
-            val quality = container.select("h4 .badge-outline").first()?.toString()?.trim() ?: ""
+            val quality = container.select("h4 .badge-outline").first()?.text()?.trim() ?: ""
 
             if (seasonEpisode.isNotEmpty() && videoUrl.isNotEmpty()) {
-                episodeDataList.add(
+                episodeList.add(
                     EpisodeData(
                         seasonEpisode = seasonEpisode,
                         videoUrl = videoUrl,
@@ -256,7 +256,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 )
             }
         }
-        return episodeInfoList
+        return episodeList
     }
 
     private fun parseEpisodeNumbers(episodes: List<EpisodeData>): List<EpisodeData> {
