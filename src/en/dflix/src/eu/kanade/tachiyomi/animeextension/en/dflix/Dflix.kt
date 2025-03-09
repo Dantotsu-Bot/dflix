@@ -293,7 +293,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 url = epInfo.videoUrl ?: ""
                 name = epInfo.seasonEpisode + " " + epInfo.episodeName
                 episode_number = episodeNumber
-                scanlator = epInfo.quality " • " + (epInfo.size ?: "")
+                scanlator = epInfo.quality + " • " + (epInfo.size ?: "")
             },
           )
             lastSeason = season
