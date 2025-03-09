@@ -15,8 +15,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
 import okhttp3.Headers
-import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import uy.kohesive.injekt.api.get
 
@@ -138,9 +136,9 @@ class Dflix : AnimeCatalogueSource {
         val script = document.select("script")
         val scriptContent = script.html()
         return when {
-          (scriptContent.contains("\"/m/lazyload/")) -> "m"
-          (scriptContent.contains("\"/s/lazyload/")) -> "s"
-          else -> null
+           (scriptContent.contains("\"/m/lazyload/")) -> "m"
+           (scriptContent.contains("\"/s/lazyload/")) -> "s"
+           else -> null
         }
     }
 
