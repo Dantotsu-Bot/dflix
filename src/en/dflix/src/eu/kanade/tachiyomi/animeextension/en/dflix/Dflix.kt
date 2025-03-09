@@ -203,7 +203,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                     val seasonDocument = client.newCall(seasonRequest).execute().asJsoup()
                     extractEpisode(seasonDocument)
                 }
-            }.awaitAll()
+            }.awaitAll().flatten()
             sortEpisodes(episodeList.reversed())
         }
     }
