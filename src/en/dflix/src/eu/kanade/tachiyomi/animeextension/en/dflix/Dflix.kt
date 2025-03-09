@@ -186,7 +186,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = GET(anime.url, headers = cHeaders)
-        val document = client.newCall(request).execute().asJsoup()
+        val response = client.newCall(request).execute().asJsoup()
+        val document = response.asJsoup()
 
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
 
@@ -197,14 +198,15 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 .map { it.attr("href") }
                 .reversed()
 
-            val episodeList = seasonLinks.map { link ->
-                async {
-                    val seasonRequest = GET("$baseUrl$link", headers = cHeaders)
-                    val seasonDocument = client.newCall(seasonRequest).execute().asJsoup()
-                    extractEpisode(seasonDocument)
-                }
-            }.awaitAll().flatten()
-            sortEpisodes(episodeList)
+            coroutineScope {
+                seasonLinks.map { link ->
+                    async {
+                        val seasonRequest = GET("$baseUrl$link", headers = cHeaders)
+                        val seasonResponse = client.newCall(seasonRequest).execute()
+                        extractEpisode(seasonResponse.asJsoup())
+                    }
+                }.awaitAll().flatten().let { sortEpisodes(it) }
+            }
         }
     }
 
@@ -275,8 +277,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         var lastEpisode = 0
         var lastSeason = 0
         for (epInfo in episodes) {
-            val seasonMatch = Regex("S(\\d+)").find(epInfo.seasonEpisode)
-            val episodeMatch = Regex("EP (\\d+)").find(epInfo.seasonEpisode)
+            val seasonMatch = SEASON_PATTERN.find(epInfo.seasonEpisode)
+            val episodeMatch = EPISODE_PATTERN.find(epInfo.seasonEpisode)
             val season = seasonMatch?.groupValues?.get(1)?.toInt() ?: lastSeason
             val episode = episodeMatch?.groupValues?.get(1)?.toInt()
             val episodeNumber = when {
@@ -299,6 +301,11 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             lastSeason = season
         }
         return result.reversed()
+    }
+
+    companion object {
+        private val SEASON_PATTERN = Regex("S(\\d+)")
+        private val EPISODE_PATTERN = Regex("EP (\\d+)")
     }
 
     data class EpisodeData(
