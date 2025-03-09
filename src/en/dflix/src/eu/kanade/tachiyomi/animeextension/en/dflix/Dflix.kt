@@ -185,6 +185,10 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = TODO()
 
+    override fun episodeListRequest(anime: SAnime): Request = TODO()
+
+    override fun episodeListParse(response: Response): List<SEpisode> = TODO()
+
     // ============================ Video Links =============================
 
     override suspend fun getVideoList(episode: SEpisode): List<Video> = TODO()
