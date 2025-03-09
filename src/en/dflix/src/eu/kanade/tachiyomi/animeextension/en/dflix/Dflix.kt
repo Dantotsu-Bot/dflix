@@ -189,6 +189,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     // ============================== Episodes ==============================
 
+        }
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = GET(anime.url, headers = cHeaders)
         val response = client.newCall(request).execute()
@@ -205,14 +206,17 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 .reversed()
 
             coroutineScope {
-                seasonLinks.map { link ->
+                val episodeLists = seasonLinks.map { link ->
                     async {
                         val seasonRequest = GET("$baseUrl$link", headers = cHeaders)
-                        val seasonResponse = client.newCall(seasonRequest).execute().use { seasonResponse ->
+                        client.newCall(seasonRequest).execute().use { seasonResponse ->
                             extractEpisode(seasonResponse.asJsoup())
                         }
                     }
-                }.awaitAll().flatten().let { sortEpisodes(it) }
+                }.awaitAll()
+
+                val allEpisodes = episodeLists.flatten()
+                sortEpisodes(allEpisodes)
             }
         }
     }
