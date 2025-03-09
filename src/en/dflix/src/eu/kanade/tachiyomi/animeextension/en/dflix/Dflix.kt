@@ -252,7 +252,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                         videoUrl = videoUrl,
                         size = size,
                         episodeName = episodeName,
-                        quality = quality
+                        quality = quality,
                     ),
                 )
             }
@@ -290,6 +290,6 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         val size: String,
         val episodeName: String,
         val quality: String,
-        val episode: Float? = null
+        val episode: Float? = null,
     )
 }
