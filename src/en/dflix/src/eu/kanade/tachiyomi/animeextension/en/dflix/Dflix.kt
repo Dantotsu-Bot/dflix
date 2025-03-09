@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.util.asJsoup
@@ -15,10 +16,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
 import okhttp3.Headers
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import uy.kohesive.injekt.api.get
 
-class Dflix : AnimeCatalogueSource {
+class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override val name = "Dflix"
 
@@ -42,13 +45,18 @@ class Dflix : AnimeCatalogueSource {
 
     override suspend fun getPopularAnime(page: Int): AnimesPage = getLatestUpdates(page)
 
+    override fun popularAnimeParse(response: Response): AnimesPage = TODO()
+
+    override fun popularAnimeRequest(page: Int): Request = TODO()
+
     // =============================== Latest ===============================
 
-    override suspend fun getLatestUpdates(page: Int): AnimesPage {
-        val request = GET("$baseUrl/m/recent/$page", headers = cHeaders)
-        val response = client.newCall(request).execute()
-        val document = response.asJsoup()
+    override fun latestUpdatesRequest(page: Int): Request {
+        return GET("$baseUrl/m/recent/$page", headers = cHeaders)
+    }
 
+    override fun latestUpdatesParse(response: Response): AnimesPage {
+        val document = response.asJsoup()
         val animeList = document.select("div.card a.cfocus").map { element ->
             val card = element.parent()
             SAnime.create().apply {
@@ -116,11 +124,18 @@ class Dflix : AnimeCatalogueSource {
         return AnimesPage(combinedResults, hasNextPage = false)
     }
 
+    override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request =
+        TODO()
+
+    override fun searchAnimeParse(response: Response): AnimesPage = TODO()
+
     // =========================== Anime Details ============================
 
-    override suspend fun getAnimeDetails(anime: SAnime): SAnime {
-        val request = GET(anime.url, headers = cHeaders)
-        val response = client.newCall(request).execute()
+    override fun animeDetailsRequest(anime: SAnime): Request {
+        return GET(anime.url, headers = cHeaders)
+    }
+
+    override fun animeDetailsParse(response: Response): SAnime {
         val document = response.asJsoup()
 
         val type = getMediaType(document) ?: throw IllegalArgumentException("Unknown media type")
