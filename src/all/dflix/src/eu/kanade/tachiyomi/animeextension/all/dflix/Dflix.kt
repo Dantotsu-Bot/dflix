@@ -28,7 +28,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override val baseUrl = "https://dflix.discoveryftp.net"
 
-    override val lang = "en"
+    override val lang = "all"
 
     override val supportsLatest = true
 
