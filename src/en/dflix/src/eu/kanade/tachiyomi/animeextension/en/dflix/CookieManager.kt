@@ -33,7 +33,6 @@ class CookieManager {
                 }
             }
         } catch (e: IOException) {
-            emptyList()
             throw Exception("Failed to get cookies: ${e.message}")
         }
     }
