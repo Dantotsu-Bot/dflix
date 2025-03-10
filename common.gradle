@@ -35,6 +35,7 @@ android {
         applicationIdSuffix project.parent.name + "." + project.name
         def calculatedVersionCode = theme == null ? extVersionCode : theme.baseVersionCode + overrideVersionCode
         versionCode calculatedVersionCode
+        versionName "14.${calculatedVersionCode}"
         base {
             archivesName = "aniyomi-$applicationIdSuffix-v$versionName"
         }
