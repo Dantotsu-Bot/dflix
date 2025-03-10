@@ -281,12 +281,13 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     }
 
     private fun sortEpisodes(episodes: List<EpisodeData>): List<SEpisode> {
-        val result = mutableListOf<SEpisode>()
+        val result = ArrayList<SEpisode>(episodes.size)
         var lastEpisode = 0
         var lastSeason = 0
         for (epInfo in episodes) {
-            val seasonMatch = SEASON_PATTERN.find(epInfo.seasonEpisode)
-            val episodeMatch = EPISODE_PATTERN.find(epInfo.seasonEpisode)
+            val seasonText = epInfo.seasonEpisode
+            val seasonMatch = SEASON_PATTERN.find(seasonText)
+            val episodeMatch = EPISODE_PATTERN.find(seasonText)
             val season = seasonMatch?.groupValues?.get(1)?.toInt() ?: lastSeason
             val episode = episodeMatch?.groupValues?.get(1)?.toInt()
             val episodeNumber = when {
@@ -301,14 +302,14 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             result.add(
                 SEpisode.create().apply {
                     url = epInfo.videoUrl ?: ""
-                    name = epInfo.seasonEpisode + " " + epInfo.episodeName
+                    name = "${epInfo.seasonEpisode} - ${epInfo.episodeName}"
                     episode_number = episodeNumber
-                    scanlator = epInfo.quality + " • " + (epInfo.size ?: "")
+                    scanlator = "${epInfo.quality} • ${epInfo.size ?: ""}"
                 },
             )
             lastSeason = season
         }
-        return result.reversed()
+        return result.asReversed()
     }
 
     companion object {

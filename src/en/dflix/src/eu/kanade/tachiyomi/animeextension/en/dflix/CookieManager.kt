@@ -32,9 +32,9 @@ class CookieManager {
                     emptyList()
                 }
             }
-        } catch (e: IOException) {
-            println("Failed to fetch cookies: ${e.message}")
+        } catch {
             emptyList()
+            throw Exception("Failed to get cookies.")
         }
     }
 
