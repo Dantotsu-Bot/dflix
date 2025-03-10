@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.en.dflix
+package eu.kanade.tachiyomi.animeextension.all.dflix
 
 import okhttp3.Cookie
 import okhttp3.HttpUrl.Companion.toHttpUrl

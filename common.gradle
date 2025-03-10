@@ -34,6 +34,8 @@ android {
         targetSdkVersion AndroidConfig.targetSdk
         applicationIdSuffix project.parent.name + "." + project.name
         versionCode theme == null ? extVersionCode : theme.baseVersionCode + overrideVersionCode
+        def calculatedVersionCode = theme == null ? extVersionCode : theme.baseVersionCode + overrideVersionCode
+        versionCode calculatedVersionCode
         base {
             archivesName = "aniyomi-$applicationIdSuffix-v$versionName"
         }
@@ -95,8 +97,6 @@ android {
         freeCompilerArgs += "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
     }
 }
-
-project.android.defaultConfig.versionName = "14.${project.android.defaultConfig.versionCode}"
 
 dependencies {
     if (theme != null) implementation(theme) // Overrides core launcher icons

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.en.dflix
+package eu.kanade.tachiyomi.animeextension.all.dflix
 
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
