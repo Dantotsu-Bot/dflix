@@ -14,6 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -202,18 +204,23 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 .map { it.attr("href") }
                 .reversed()
 
+            val maxRequests = 3
+            val requestSemaphore = Semaphore(maxRequests)
+
             coroutineScope {
-                val episodeLists = seasonLinks.map { link ->
+                val requests = seasonLinks.map { link ->
                     async {
                         val seasonRequest = GET("$baseUrl$link", headers = cHeaders)
-                        client.newCall(seasonRequest).execute().use { seasonResponse ->
-                            extractEpisode(seasonResponse.asJsoup())
+                        requestSemaphore.withPermit {
+                            client.newCall(seasonRequest).execute().use { res ->
+                                extractEpisode(res.asJsoup())
+                            }
                         }
                     }
-                }.awaitAll()
+                }
 
-                val allEpisodes = episodeLists.flatten()
-                sortEpisodes(allEpisodes)
+                val episodes = requests.awaitAll().flatten()
+                sortEpisodes(episodes)
             }
         }
     }
