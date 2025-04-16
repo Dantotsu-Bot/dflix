@@ -247,7 +247,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             if (a.length < 2 || b.length < 2) return 0.0
 
             val aLen = a.length - 1
-            val bLen = b.length -1
+            val bLen = b.length - 1
             var matches = 0
             val seen = HashSet<string>()
 
