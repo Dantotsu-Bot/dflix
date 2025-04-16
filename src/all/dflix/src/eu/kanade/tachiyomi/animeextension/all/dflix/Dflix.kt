@@ -38,7 +38,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     private val cookieHeader by lazy { cm.getCookiesHeaders() }
 
-    private val cHeaders: Headers by lazy {
+    private val globalHeaders: Headers by lazy {
         Headers.Builder().apply {
             add("Accept", "*/*")
             add("Cookie", cookieHeader)
@@ -57,7 +57,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =============================== Latest ===============================
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/m/recent/$page", headers = cHeaders)
+        return GET("$baseUrl/m/recent/$page", headers = globalHeaders)
     }
 
     override fun latestUpdatesParse(response: Response): AnimesPage {
@@ -89,7 +89,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 add("types", type)
             }.build()
 
-            val request = POST("$baseUrl/search", headers = cHeaders, body = body)
+            val request = POST("$baseUrl/search", headers = globalHeaders, body = body)
             val response = client.newCall(request).execute()
             val document = response.asJsoup()
             response.close()
@@ -116,7 +116,6 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
                 }
             }
 
-            response.close()
             animeList
         }
 
@@ -127,7 +126,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
         }
         val combinedResults = movies + series
 
-        return AnimesPage(combinedResults, hasNextPage = false)
+        return AnimesPage(combinedResults.sortByTitle(query), hasNextPage = false)
     }
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request =
@@ -138,7 +137,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // =========================== Anime Details ============================
 
     override fun animeDetailsRequest(anime: SAnime): Request {
-        return GET(anime.url, headers = cHeaders)
+        return GET(anime.url, headers = globalHeaders)
     }
 
     override fun animeDetailsParse(response: Response): SAnime {
@@ -190,7 +189,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     // ============================== Episodes ==============================
 
     override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withContext(Dispatchers.IO) {
-        val request = GET(anime.url, headers = cHeaders)
+        val request = GET(anime.url, headers = globalHeaders)
         val response = client.newCall(request).execute()
         val document = response.asJsoup()
         response.close()
@@ -210,7 +209,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             coroutineScope {
                 val requests = seasonLinks.map { link ->
                     async {
-                        val seasonRequest = GET("$baseUrl$link", headers = cHeaders)
+                        val seasonRequest = GET("$baseUrl$link", headers = globalHeaders)
                         requestSemaphore.withPermit {
                             client.newCall(seasonRequest).execute().use { res ->
                                 extractEpisode(res.asJsoup())
@@ -242,6 +241,23 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     }
 
     // ============================= Utilities ==============================
+
+    private fun List<SAnime>.sortByTitle(query: String): List<SAnime> {
+        fun diceCoefficient(a: String, b: String): Double {
+            if (a.length < 2 || b.length < 2) return 0.0
+            val bigramsA = a.windowed(2).toMutableList()
+            val bigramsB = b.windowed(2).toMutableList()
+            var matches = 0
+            for (bi in bigramsA) {
+                if (bigramsB.remove(bi)) matches++
+            }
+            return (2.0 * matches) / (a.length - 1 + b.length - 1)
+        }
+
+        return this.sortedByDescending { anime ->
+            diceCoefficient(query.lowercase(), anime.title.lowercase())
+        }
+    }
 
     private fun getMovieMedia(document: Document): List<SEpisode> {
         val videoLink = document.select("div.col-md-12 a.btn").last()?.attr("href")?.toString()?.replace(" ", "%20")
