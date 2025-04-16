@@ -22,7 +22,7 @@ REPO_ICON_DIR = REPO_DIR / "icon"
 
 REPO_ICON_DIR.mkdir(parents=True, exist_ok=True)
 
-with open("output.json", encoding="utf-8") as f:
+with open("out.json", encoding="utf-8") as f:
     inspector_data = json.load(f)
 
 index_data = []
@@ -100,6 +100,7 @@ index_min_data.sort(key=lambda x: x["pkg"])
 
 with (REPO_DIR / "index.json").open("w", encoding="utf-8") as f:
     index_data_str = json.dumps(index_data, ensure_ascii=False, indent=2)
+
     print(index_data_str)
     f.write(index_data_str)
 

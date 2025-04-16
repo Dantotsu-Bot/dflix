@@ -245,15 +245,22 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     private fun List<SAnime>.sortByTitle(query: String): List<SAnime> {
         fun diceCoefficient(a: String, b: String): Double {
             if (a.length < 2 || b.length < 2) return 0.0
-            val bigramsA = a.windowed(2).toMutableList()
-            val bigramsB = b.windowed(2).toMutableList()
-            var matches = 0
-            for (bi in bigramsA) {
-                if (bigramsB.remove(bi)) matches++
-            }
-            return (2.0 * matches) / (a.length - 1 + b.length - 1)
-        }
 
+            val aLen = a.length - 1
+            val bLen = b.length -1
+            var matches = 0
+            val seen = HashSet<string>()
+
+            for (i in 0 until aLen) {
+                seen.add(a.substring(i, i + 2))
+            }
+            for (i in 0 until bLen) {
+                val bigram = b.substring(i, i + 2)
+                if (seen.remove(bigram)) {
+                    matches++
+                }
+            return (2.0 * matches) / (aLen + bLen)
+        }
         return this.sortedByDescending { anime ->
             diceCoefficient(query.lowercase(), anime.title.lowercase())
         }
