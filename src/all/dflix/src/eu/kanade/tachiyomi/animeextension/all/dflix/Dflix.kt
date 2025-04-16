@@ -249,7 +249,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             val aLen = a.length - 1
             val bLen = b.length - 1
             var matches = 0
-            val seen = HashSet<string>()
+            val seen = HashSet<String>()
 
             for (i in 0 until aLen) {
                 seen.add(a.substring(i, i + 2))
