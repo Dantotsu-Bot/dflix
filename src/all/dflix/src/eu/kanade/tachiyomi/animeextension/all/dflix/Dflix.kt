@@ -256,9 +256,8 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             }
             for (i in 0 until bLen) {
                 val bigram = b.substring(i, i + 2)
-                if (seen.remove(bigram)) {
-                    matches++
-                }
+                if (seen.remove(bigram)) matches++
+            }
             return (2.0 * matches) / (aLen + bLen)
         }
         return this.sortedByDescending { anime ->
