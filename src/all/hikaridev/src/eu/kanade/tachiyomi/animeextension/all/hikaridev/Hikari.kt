@@ -33,7 +33,7 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
     override val name = "Hikari_Dev"
 
-    override val baseUrl = "https://https://hikari.gg"
+    override val baseUrl = "https://hikari.gg"
 
     override val lang = "all"
 
