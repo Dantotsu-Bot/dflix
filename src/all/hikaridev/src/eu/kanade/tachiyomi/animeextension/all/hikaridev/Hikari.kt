@@ -31,7 +31,7 @@ import uy.kohesive.injekt.api.get
 
 class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
-    override val name = "Hikari_Dev"
+    override val name = "Hikari_Dev" // ya
 
     override val baseUrl = "https://watch.hikaritv.xyz"
 
