@@ -1,0 +1,14 @@
+ext {
+    extName = 'Hikari_Dev'
+    extClass = '.Hikari'
+    extVersionCode = 01
+}
+
+apply from: "$rootDir/common.gradle"
+
+dependencies {
+    implementation(project(':lib:chillx-extractor'))
+    implementation(project(':lib:filemoon-extractor'))
+    implementation(project(':lib:streamwish-extractor'))
+    implementation(project(':lib:vidhide-extractor'))
+}
