@@ -45,7 +45,7 @@ data class AnimeDTO(
 
 @Serializable
 data class RecentResponse(
-    val results: List<AnimeDTO>,
+    val results: List<RecentDTO>,
     val count: Int,
 )
 
