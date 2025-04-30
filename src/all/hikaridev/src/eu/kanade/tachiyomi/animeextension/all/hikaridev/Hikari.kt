@@ -83,7 +83,7 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
         val animeList = parsed.results.map {
             SAnime.create().apply {
-                url = it.uid
+                url = it.uid.toString()
                 title = it.title_en ?: it.title
                 thumbnail_url = it.imageUrl
             }
