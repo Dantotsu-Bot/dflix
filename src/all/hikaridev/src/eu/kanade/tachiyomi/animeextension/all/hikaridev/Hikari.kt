@@ -52,39 +52,45 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================== Popular ===============================
 
-    override fun popularAnimeRequest(page: Int): Request {
-        return GET("$apiUrl/api/anime/upcoming/?page=$page")
-    }
+    override fun popularAnimeRequest(page: Int): Request =
+        GET("$apiUrl/api/anime/upcoming/?page=$page")
 
     override fun popularAnimeParse(response: Response): AnimesPage {
-        val parsed = response.parseAs<ApiResponse>()
+        val parsed = response.parseAs<PopularResponse>()
 
-        val hasNextPage = true
-        val animeList = parsed.toSAnimeList()
+        val hasNextPage = false
+        val animeList = parsed.results.map { it.toSAnime() }
 
         return AnimesPage(animeList, hasNextPage)
     }
 
-    override fun popularAnimeSelector(): String = ".flw-item"
+    override fun popularAnimeSelector(): String =
+        throw UnsupportedOperationException()
 
-    override fun popularAnimeFromElement(element: Element): SAnime = SAnime.create().apply {
-        setUrlWithoutDomain(element.selectFirst("a[data-id]")!!.attr("abs:href"))
-        thumbnail_url = element.selectFirst("img")!!.attr("abs:src")
-        title = element.selectFirst(".film-name")!!.text()
-    }
+    override fun popularAnimeFromElement(element: Element): SAnime =
+        throw UnsupportedOperationException()
 
-    override fun popularAnimeNextPageSelector(): String? = null
+    override fun popularAnimeNextPageSelector(): String? =
+        throw UnsupportedOperationException()
 
     // =============================== Latest ===============================
 
-    override fun latestUpdatesRequest(page: Int): Request {
-        val url = "$baseUrl/ajax/getfilter?type=&country=&stats=&rate=&source=&season=&language=&aired_year=&aired_month=&aired_day=&sort=recently_updated&genres=&page=$page"
-        val headers = headersBuilder().set("Referer", "$baseUrl/filter").build()
-        return GET(url, headers)
-    }
+    override fun latestUpdatesRequest(page: Int): Request =
+        GET("$apiUrl/api/episode/new/?limit=300&language=EN")
 
-    override fun latestUpdatesParse(response: Response): AnimesPage =
-        popularAnimeParse(response)
+    override fun latestUpdatesParse(response: Response): AnimesPage {
+        val parsed = response.parseAs<RecentResponse>()
+
+        val animeList = parsed.results.map {
+            SAnime.create().apply {
+                url = it.uid
+                title = it.title_en?.takeIf { it.isNotEmpty() } ?: it.title
+                thumbnail_url = it.imageUrl
+            }
+        }
+
+        return AnimesPage(animeList, false)
+    }
 
     override fun latestUpdatesSelector(): String =
         throw UnsupportedOperationException()
@@ -371,10 +377,6 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
         throw UnsupportedOperationException()
 
     // ============================= Utilities ==============================
-
-    private fun ApiResponse.toSAnimeList(): List<SAnime> {
-        return results.map { it.toSAnime() }
-    }
 
     private fun AnimeDTO.toSAnime(): SAnime {
         return SAnime.create().apply {

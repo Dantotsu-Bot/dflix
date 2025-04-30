@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.animeextension.all.hikaridev
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ApiResponse(
+data class PopularResponse(
     val results: List<AnimeDTO>,
     val count: Int,
 )
@@ -41,4 +41,21 @@ data class AnimeDTO(
     val created_at: String,
     val updated_at: String,
     val ani_ename: String,
+)
+
+@Serializable
+data class RecentResponse(
+    val results: List<AnimeDTO>,
+    val count: Int,
+)
+
+@Serializable
+data class RecentDTO(
+    val uid: String,
+    val ep_id_name: String,
+    val ep_name: String,
+    val created_at: String,
+    val title: String,
+    val title_en: String?,
+    val imageUrl: String,
 )
