@@ -176,50 +176,31 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================== Episodes ==============================
 
-    private val specialCharRegex = Regex("""(?![\-_])\W{1,}""")
+    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> {
+        val req = GET("$apiUrl/api/episode/uid/${anime.url}/")
+        val response = client.newCall(req).execute()
+        val episodes = response.parseAs<List<EpisodeDTO>>()
+        response.close()
 
-    override fun episodeListRequest(anime: SAnime): Request {
-        val animeId = anime.url.split("/")[2]
-
-        val sanitized = anime.title.replace(" ", "_")
-
-        val refererUrl = baseUrl.toHttpUrl().newBuilder().apply {
-            addPathSegment("watch")
-            addQueryParameter("anime", specialCharRegex.replace(sanitized, ""))
-            addQueryParameter("uid", animeId)
-            addQueryParameter("eps", "1")
-        }.build()
-
-        val headers = headersBuilder()
-            .set("Referer", refererUrl.toString())
-            .build()
-
-        return GET("$baseUrl/ajax/episodelist/$animeId", headers)
-    }
-
-    override fun episodeListParse(response: Response): List<SEpisode> {
-        return response.parseAs<HtmlResponseDto>().toHtml(baseUrl)
-            .select(episodeListSelector())
-            .map(::episodeFromElement)
-            .reversed()
-    }
-
-    override fun episodeListSelector() = "a[class~=ep-item]"
-
-    override fun episodeFromElement(element: Element): SEpisode {
-        val epText = element.selectFirst(".ssli-order")?.text()?.trim()
-            ?: element.attr("data-number").trim()
-        val ep = epText.toFloatOrNull() ?: 0F
-
-        val nameText = element.selectFirst(".ep-name")?.text()?.trim()
-            ?: element.attr("title").replace("Episode-", "Ep. ") ?: ""
-
-        return SEpisode.create().apply {
-            setUrlWithoutDomain(element.attr("abs:href"))
-            episode_number = ep
-            name = "Ep. $ep - $nameText"
+        return episodes.map { ep ->
+            SEpisode.create().apply {
+                url = "/${anime.url}/${ep.ep_id_name}/"
+                name = ep.ep_name
+                episode_number = ep.ep_id_name.toFloatOrNull() ?: 0f
+            }
         }
     }
+
+    override fun episodeListRequest(anime: SAnime): Request =
+        throw UnsupportedOperationException()
+
+    override fun episodeListParse(response: Response): List<SEpisode> =
+        throw UnsupportedOperationException()
+
+    override fun episodeListSelector() = throw UnsupportedOperationException()
+
+    override fun episodeFromElement(element: Element): SEpisode =
+        throw UnsupportedOperationException()
 
     // ============================ Video Links =============================
 

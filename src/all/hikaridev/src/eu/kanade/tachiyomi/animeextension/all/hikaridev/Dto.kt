@@ -59,3 +59,9 @@ data class RecentDTO(
     val title_en: String?,
     val imageUrl: String,
 )
+
+@Serializable
+data class EpisodeDTO(
+    val ep_id_name: String,
+    val ep_name: String,
+)
