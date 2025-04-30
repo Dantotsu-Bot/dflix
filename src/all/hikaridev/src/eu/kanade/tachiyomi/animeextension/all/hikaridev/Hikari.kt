@@ -378,7 +378,7 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
     private fun AnimeDTO.toSAnime(): SAnime {
         return SAnime.create().apply {
-            url = "/anime/$uid"
+            url = uid
             title = ani_ename.ifEmpty { ani_name }
             artist = ani_studio
             author = ani_producers
@@ -391,6 +391,10 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
             }
             thumbnail_url = ani_poster
         }
+    }
+
+    override fun getAnimeUrl(anime: SAnime): String {
+        return "$baseUrl/info/${anime.url}"
     }
 
     @Serializable
