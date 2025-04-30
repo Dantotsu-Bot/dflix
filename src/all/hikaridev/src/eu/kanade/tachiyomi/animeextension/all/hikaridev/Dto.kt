@@ -1,0 +1,64 @@
+package eu.kanade.tachiyomi.animeextension.all.hikaridev
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class ApiResponse(
+    val results: List<AnimeDTO>,
+    val count: Int
+)
+
+@Serializable
+data class AnimeDTO(
+    val id: Int,
+    val external: List<ExternalLink>,
+    val relations: Relations,
+    val ani_release: Int?,
+    val view_count: Int,
+    val view_count_month: Int,
+    val view_count_years: Int,
+    val ani_score: Double? = null,
+    val uid: String,
+    val ani_name: String,
+    val ani_jname: String,
+    val ani_synonyms: String,
+    val ani_genre: String,
+    val ani_type: Int,
+    val ani_country: String,
+    val ani_stats: Int,
+    val ani_source: String,
+    val ani_ep: String,
+    val ani_synopsis: String,
+    val ani_poster: String,
+    val ani_release_season: Int,
+    val ani_rate: String,
+    val ani_quality: String,
+    val ani_time: String,
+    val ani_pv: String,
+    val ani_aired: String,
+    val ani_aired_fin: String,
+    val ani_studio: String,
+    val ani_producers: String,
+    val ani_manga_url: String,
+    val created_at: String,
+    val updated_at: String,
+    val ani_ename: String
+)
+
+@Serializable
+data class ExternalLink(
+    val name: String,
+    val url: String
+)
+
+@Serializable
+data class Relations(
+    val Prequel: List<RelatedEntry> = emptyList(),
+    val Adaptation: List<RelatedEntry> = emptyList()
+)
+
+@Serializable
+data class RelatedEntry(
+    val mal_id: Int,
+    val type: String
+)

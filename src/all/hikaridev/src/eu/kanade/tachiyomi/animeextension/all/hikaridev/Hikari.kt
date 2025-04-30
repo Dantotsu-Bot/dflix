@@ -35,6 +35,8 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
     override val baseUrl = "https://hikari.gg"
 
+    private val apiUrl = "https://api.hikari.gg"
+
     override val lang = "all"
 
     override val supportsLatest = true
@@ -51,17 +53,14 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
     // ============================== Popular ===============================
 
     override fun popularAnimeRequest(page: Int): Request {
-        val url = "$baseUrl/ajax/getfilter?type=&country=&stats=&rate=&source=&season=&language=&aired_year=&aired_month=&aired_day=&sort=score&genres=&page=$page"
-        val headers = headersBuilder().set("Referer", "$baseUrl/filter").build()
-        return GET(url, headers)
+        return GET("$apiUrl/api/anime/upcoming/?page=$page")
     }
 
     override fun popularAnimeParse(response: Response): AnimesPage {
-        val parsed = response.parseAs<HtmlResponseDto>()
+        val parsed = response.parseAs<ApiResponse>()
 
-        val hasNextPage = response.request.url.queryParameter("page")!!.toInt() < parsed.page!!.totalPages
-        val animeList = parsed.toHtml(baseUrl).select(popularAnimeSelector())
-            .map(::popularAnimeFromElement)
+        val hasNextPage = true
+        val animeList = parsed.toSAnimeList()
 
         return AnimesPage(animeList, hasNextPage)
     }
@@ -372,6 +371,27 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
         throw UnsupportedOperationException()
 
     // ============================= Utilities ==============================
+
+    private fun ApiResponse.toSAnimeList(): List<SAnime> {
+        return results.map { it.toSAnime() }
+    }
+
+    private fun AnimeDTO.toSAnime(): SAnime {
+        return SAnime.create().apply {
+            url = "/anime/$uid"
+            title = ani_ename.ifEmpty { ani_name }
+            artist = ani_studio
+            author = ani_producers
+            description = ani_synopsis
+            genre = ani_genre
+            status = when (ani_stats) {
+                2 -> SAnime.COMPLETED
+                3 -> SAnime.ONGOING
+                else -> SAnime.UNKNOWN
+            }
+            thumbnail_url = ani_poster
+        }
+    }
 
     @Serializable
     class HtmlResponseDto(
