@@ -65,3 +65,10 @@ data class EpisodeDTO(
     val ep_id_name: String,
     val ep_name: String,
 )
+
+@Serializable
+data class VideoDTO(
+    val embed_type: String,
+    val embed_name: String,
+    val embed_frame: String,
+)

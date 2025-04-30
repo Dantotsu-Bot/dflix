@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.lib.chillxextractor.ChillxExtractor
 import eu.kanade.tachiyomi.lib.filemoonextractor.FilemoonExtractor
 import eu.kanade.tachiyomi.lib.streamwishextractor.StreamWishExtractor
@@ -29,7 +29,7 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
+class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override val name = "Hikari_Dev"
 
@@ -64,15 +64,6 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
         return AnimesPage(animeList, hasNextPage)
     }
 
-    override fun popularAnimeSelector(): String =
-        throw UnsupportedOperationException()
-
-    override fun popularAnimeFromElement(element: Element): SAnime =
-        throw UnsupportedOperationException()
-
-    override fun popularAnimeNextPageSelector(): String? =
-        throw UnsupportedOperationException()
-
     // =============================== Latest ===============================
 
     override fun latestUpdatesRequest(page: Int): Request =
@@ -92,57 +83,14 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
         return AnimesPage(animeList, false)
     }
 
-    override fun latestUpdatesSelector(): String =
-        throw UnsupportedOperationException()
-
-    override fun latestUpdatesFromElement(element: Element): SAnime =
-        throw UnsupportedOperationException()
-
-    override fun latestUpdatesNextPageSelector(): String =
-        throw UnsupportedOperationException()
-
     // =============================== Search ===============================
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
-        val url = baseUrl.toHttpUrl().newBuilder().apply {
-            if (query.isNotEmpty()) {
-                addPathSegment("search")
-                addQueryParameter("keyword", query)
-                addQueryParameter("page", page.toString())
-            } else {
-                addPathSegment("ajax")
-                addPathSegment("getfilter")
-                filters.filterIsInstance<UriFilter>().forEach {
-                    it.addToUri(this)
-                }
-                addQueryParameter("page", page.toString())
-            }
-        }.build()
-
-        val headers = headersBuilder().apply {
-            if (query.isNotEmpty()) {
-                set("Referer", url.toString().substringBeforeLast("&page"))
-            } else {
-                set("Referer", "$baseUrl/filter")
-            }
-        }.build()
-
-        return GET(url, headers)
+        TODO()
     }
 
-    override fun searchAnimeParse(response: Response): AnimesPage {
-        return if (response.request.url.encodedPath.startsWith("/search")) {
-            super.searchAnimeParse(response)
-        } else {
-            popularAnimeParse(response)
-        }
-    }
-
-    override fun searchAnimeSelector(): String = popularAnimeSelector()
-
-    override fun searchAnimeFromElement(element: Element): SAnime = popularAnimeFromElement(element)
-
-    override fun searchAnimeNextPageSelector(): String = "ul.pagination > li.active + li"
+    override fun searchAnimeParse(response: Response): AnimesPage =
+        TODO()
 
     // ============================== Filters ===============================
 
@@ -172,35 +120,22 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
         return parsed.toSAnime()
     }
 
-    override fun animeDetailsParse(document: Document): SAnime = throw UnsupportedOperationException()
-
     // ============================== Episodes ==============================
 
-    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> {
-        val req = GET("$apiUrl/api/episode/uid/${anime.url}/")
-        val response = client.newCall(req).execute()
-        val episodes = response.parseAs<List<EpisodeDTO>>()
-        response.close()
+    override fun episodeListRequest(anime: SAnime): Request =
+        GET("$apiUrl/api/episode/uid/${anime.url}/")
+
+    override fun episodeListParse(response: Response): List<SEpisode> {
+        val uid = response.request.url.pathSegments[3]
 
         return episodes.map { ep ->
             SEpisode.create().apply {
-                url = "/${anime.url}/${ep.ep_id_name}/"
-                name = ep.ep_name
+                url = "/$uid/${ep.ep_id_name}/"
+                name = "${ep.ep_id_number} - ${ep.ep_name}"
                 episode_number = ep.ep_id_name.toFloatOrNull() ?: 0f
             }
         }.asReversed()
     }
-
-    override fun episodeListRequest(anime: SAnime): Request =
-        throw UnsupportedOperationException()
-
-    override fun episodeListParse(response: Response): List<SEpisode> =
-        throw UnsupportedOperationException()
-
-    override fun episodeListSelector() = throw UnsupportedOperationException()
-
-    override fun episodeFromElement(element: Element): SEpisode =
-        throw UnsupportedOperationException()
 
     // ============================ Video Links =============================
 
@@ -210,129 +145,12 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
     private val streamwishExtractor by lazy { StreamWishExtractor(client, headers) }
     private val embedRegex = Regex("""getEmbed\(\s*(\d+)\s*,\s*(\d+)\s*,\s*'(\d+)'""")
 
-    override fun videoListRequest(episode: SEpisode): Request {
-        val url = (baseUrl + episode.url).toHttpUrl()
-        val animeId = url.queryParameter("uid")!!
-        val episodeNum = url.queryParameter("eps")!!
-
-        val headers = headersBuilder()
-            .set("Referer", baseUrl + episode.url)
-            .build()
-
-        return GET("$baseUrl/ajax/embedserver/$animeId/$episodeNum", headers)
-    }
+    override fun videoListRequest(episode: SEpisode): Request =
+        return GET("$apiUrl/api/embed/${episode.url}")
 
     override fun videoListParse(response: Response): List<Video> {
-        val html = response.parseAs<HtmlResponseDto>().toHtml(baseUrl)
-        Log.d("Hikari", html.toString())
-
-        val headers = headersBuilder()
-            .set("Referer", response.request.url.toString())
-            .build()
-
-        val subEmbedUrls = html.select(".servers-sub div.item.server-item").flatMap { item ->
-            val name = item.text().trim() + " (Sub)"
-            val onClick = item.selectFirst("a")?.attr("onclick")
-            if (onClick == null) {
-                Log.e("Hikari", "onClick attribute is null for item: $item")
-                return@flatMap emptyList<Pair<String, String>>()
-            }
-
-            val match = embedRegex.find(onClick)?.groupValues
-            if (match == null) {
-                Log.e("Hikari", "No match found for onClick: $onClick")
-                return@flatMap emptyList<Pair<String, String>>()
-            }
-
-            val url = "$baseUrl/ajax/embed/${match[1]}/${match[2]}/${match[3]}"
-            val iframeList = client.newCall(
-                GET(url, headers),
-            ).execute().parseAs<List<String>>()
-
-            iframeList.map {
-                val iframeSrc = Jsoup.parseBodyFragment(it).selectFirst("iframe")?.attr("src")
-                if (iframeSrc == null) {
-                    Log.e("Hikari", "iframe src is null for URL: $url")
-                    return@map Pair("", "")
-                }
-                Pair(iframeSrc, name)
-            }.filter { it.first.isNotEmpty() }
-        }
-        val dubEmbedUrls = html.select(".servers-dub div.item.server-item").flatMap { item ->
-            val name = item.text().trim() + " (Dub)"
-            val onClick = item.selectFirst("a")?.attr("onclick")
-            if (onClick == null) {
-                Log.e("Hikari", "onClick attribute is null for item: $item")
-                return@flatMap emptyList<Pair<String, String>>()
-            }
-
-            val match = embedRegex.find(onClick)?.groupValues
-            if (match == null) {
-                Log.e("Hikari", "No match found for onClick: $onClick")
-                return@flatMap emptyList<Pair<String, String>>()
-            }
-
-            val url = "$baseUrl/ajax/embed/${match[1]}/${match[2]}/${match[3]}"
-            val iframeList = client.newCall(
-                GET(url, headers),
-            ).execute().parseAs<List<String>>()
-
-            iframeList.map {
-                val iframeSrc = Jsoup.parseBodyFragment(it).selectFirst("iframe")?.attr("src")
-                if (iframeSrc == null) {
-                    Log.e("Hikari", "iframe src is null for URL: $url")
-                    return@map Pair("", "")
-                }
-                Pair(iframeSrc, name)
-            }.filter { it.first.isNotEmpty() }
-        }
-
-        val sdEmbedUrls = html.select(".servers-sub.\\&.dub div.item.server-item").flatMap { item ->
-            val name = item.text().trim() + " (Sub + Dub)"
-            val onClick = item.selectFirst("a")?.attr("onclick")
-            if (onClick == null) {
-                Log.e("Hikari", "onClick attribute is null for item: $item")
-                return@flatMap emptyList<Pair<String, String>>()
-            }
-
-            val match = embedRegex.find(onClick)?.groupValues
-            if (match == null) {
-                Log.e("Hikari", "No match found for onClick: $onClick")
-                return@flatMap emptyList<Pair<String, String>>()
-            }
-
-            val url = "$baseUrl/ajax/embed/${match[1]}/${match[2]}/${match[3]}"
-            val iframeList = client.newCall(
-                GET(url, headers),
-            ).execute().parseAs<List<String>>()
-
-            iframeList.map {
-                val iframeSrc = Jsoup.parseBodyFragment(it).selectFirst("iframe")?.attr("src")
-                if (iframeSrc == null) {
-                    Log.e("Hikari", "iframe src is null for URL: $url")
-                    return@map Pair("", "")
-                }
-                Pair(iframeSrc, name)
-            }.filter { it.first.isNotEmpty() }
-        }
-
-        return sdEmbedUrls.parallelCatchingFlatMapBlocking {
-            getVideosFromEmbed(it.first, it.second)
-        }.ifEmpty {
-            (subEmbedUrls + dubEmbedUrls).parallelCatchingFlatMapBlocking {
-                getVideosFromEmbed(it.first, it.second)
-            }
-        }
+    TODO()
     }
-
-    private fun getVideosFromEmbed(embedUrl: String, name: String): List<Video> = when {
-        name.contains("vidhide", true) -> vidHideExtractor.videosFromUrl(embedUrl, videoNameGen = { s -> "$name - $s" })
-        embedUrl.contains("filemoon", true) -> filemoonExtractor.videosFromUrl(embedUrl, prefix = "$name - ", headers = headers)
-        name.contains("streamwish", true) -> streamwishExtractor.videosFromUrl(embedUrl, prefix = "$name - ")
-        else -> chillxExtractor.videoFromUrl(embedUrl, referer = baseUrl, prefix = "$name - ")
-    }
-
-    override fun videoListSelector() = ".server-item:has(a[onclick~=getEmbed])"
 
     override fun List<Video>.sort(): List<Video> {
         val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
@@ -344,12 +162,6 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
             ),
         ).reversed()
     }
-
-    override fun videoFromElement(element: Element): Video =
-        throw UnsupportedOperationException()
-
-    override fun videoUrlParse(document: Document): String =
-        throw UnsupportedOperationException()
 
     // ============================= Utilities ==============================
 
@@ -375,17 +187,8 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
         return "$baseUrl/info/${anime.url}"
     }
 
-    @Serializable
-    class HtmlResponseDto(
-        val html: String,
-        val page: PageDto? = null,
-    ) {
-        fun toHtml(baseUrl: String): Document = Jsoup.parseBodyFragment(html, baseUrl)
-
-        @Serializable
-        class PageDto(
-            val totalPages: Int,
-        )
+    override fun getEpisodeUrl(episode: SEpisode): String {
+        return "$baseUrl/watch/${episode.url}"
     }
 
     companion object {
