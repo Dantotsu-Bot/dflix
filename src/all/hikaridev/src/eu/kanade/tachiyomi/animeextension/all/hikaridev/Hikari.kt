@@ -188,7 +188,7 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
                 name = ep.ep_name
                 episode_number = ep.ep_id_name.toFloatOrNull() ?: 0f
             }
-        }
+        }.asReversed()
     }
 
     override fun episodeListRequest(anime: SAnime): Request =
