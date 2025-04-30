@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ApiResponse(
     val results: List<AnimeDTO>,
-    val count: Int
+    val count: Int,
 )
 
 @Serializable
@@ -42,23 +42,23 @@ data class AnimeDTO(
     val ani_manga_url: String,
     val created_at: String,
     val updated_at: String,
-    val ani_ename: String
+    val ani_ename: String,
 )
 
 @Serializable
 data class ExternalLink(
     val name: String,
-    val url: String
+    val url: String,
 )
 
 @Serializable
 data class Relations(
     val Prequel: List<RelatedEntry> = emptyList(),
-    val Adaptation: List<RelatedEntry> = emptyList()
+    val Adaptation: List<RelatedEntry> = emptyList(),
 )
 
 @Serializable
 data class RelatedEntry(
     val mal_id: Int,
-    val type: String
+    val type: String,
 )
