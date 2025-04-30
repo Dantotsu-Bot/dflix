@@ -163,15 +163,13 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
 
     // =========================== Anime Details ============================
 
-    override fun animeDetailsParse(document: Document): SAnime = SAnime.create().apply {
-        with(document.selectFirst("#ani_detail")!!) {
-            title = selectFirst(".film-name")!!.text()
-            thumbnail_url = selectFirst(".film-poster img")!!.attr("abs:src")
-            description = selectFirst(".film-description > .text")?.text()
-            genre = select(".item-list:has(span:contains(Genres)) > a").joinToString { it.text() }
-            author = select(".item:has(span:contains(Studio)) > a").joinToString { it.text() }
-            status = selectFirst(".item:has(span:contains(Status)) > .name").parseStatus()
-        }
+    override fun animeDetailsRequest(anime: SAnime): Request =
+        GET("$apiUrl/api/anime/uid/${anime.url}/")
+
+    override fun animeDetailsParse(response: Response): SAnime {
+        val parsed = response.parseAs<AnimeDTO>()
+
+        return parse.toSAnime()
     }
 
     private fun Element?.parseStatus(): Int = when (this?.text()?.lowercase()) {
@@ -392,6 +390,7 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
                 else -> SAnime.UNKNOWN
             }
             thumbnail_url = ani_poster
+            initialized = true
         }
     }
 
