@@ -169,14 +169,10 @@ class Hikari : ParsedAnimeHttpSource(), ConfigurableAnimeSource {
     override fun animeDetailsParse(response: Response): SAnime {
         val parsed = response.parseAs<AnimeDTO>()
 
-        return parse.toSAnime()
+        return parsed.toSAnime()
     }
 
-    private fun Element?.parseStatus(): Int = when (this?.text()?.lowercase()) {
-        "currently airing" -> SAnime.ONGOING
-        "finished" -> SAnime.COMPLETED
-        else -> SAnime.UNKNOWN
-    }
+    override fun animeDetailsParse(document: Document): SAnime = throw UnsupportedOperationException()
 
     // ============================== Episodes ==============================
 
