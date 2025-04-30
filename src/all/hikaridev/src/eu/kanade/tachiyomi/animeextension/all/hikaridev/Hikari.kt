@@ -125,7 +125,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         return episodes.map { ep ->
             SEpisode.create().apply {
                 url = "/$uid/${ep.ep_id_name}/"
-                name = "${ep.ep_id_number} - ${ep.ep_name}"
+                name = "${ep.ep_id_name} - ${ep.ep_name}"
                 episode_number = ep.ep_id_name.toFloatOrNull() ?: 0f
             }
         }.asReversed()
