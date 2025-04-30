@@ -11,8 +11,6 @@ data class ApiResponse(
 @Serializable
 data class AnimeDTO(
     val id: Int,
-    val external: List<ExternalLink>,
-    val relations: Relations,
     val ani_release: Int?,
     val view_count: Int,
     val view_count_month: Int,
@@ -43,22 +41,4 @@ data class AnimeDTO(
     val created_at: String,
     val updated_at: String,
     val ani_ename: String,
-)
-
-@Serializable
-data class ExternalLink(
-    val name: String,
-    val url: String,
-)
-
-@Serializable
-data class Relations(
-    val Prequel: List<RelatedEntry> = emptyList(),
-    val Adaptation: List<RelatedEntry> = emptyList(),
-)
-
-@Serializable
-data class RelatedEntry(
-    val mal_id: Int,
-    val type: String,
 )
