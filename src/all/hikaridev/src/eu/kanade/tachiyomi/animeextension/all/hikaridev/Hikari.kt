@@ -119,6 +119,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         GET("$apiUrl/api/episode/uid/${anime.url}/")
 
     override fun episodeListParse(response: Response): List<SEpisode> {
+        val episodes = response.parseAs<List<EpisodeDTO>>()
         val uid = response.request.url.pathSegments[3]
 
         return episodes.map { ep ->
@@ -139,7 +140,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     private val embedRegex = Regex("""getEmbed\(\s*(\d+)\s*,\s*(\d+)\s*,\s*'(\d+)'""")
 
     override fun videoListRequest(episode: SEpisode): Request =
-        return GET("$apiUrl/api/embed/${episode.url}")
+        GET("$apiUrl/api/embed/${episode.url}")
 
     override fun videoListParse(response: Response): List<Video> {
         TODO()
