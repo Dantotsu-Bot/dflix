@@ -51,7 +51,7 @@ data class RecentResponse(
 
 @Serializable
 data class RecentDTO(
-    val uid: String,
+    val uid: Int,
     val ep_id_name: String,
     val ep_name: String,
     val created_at: String,
