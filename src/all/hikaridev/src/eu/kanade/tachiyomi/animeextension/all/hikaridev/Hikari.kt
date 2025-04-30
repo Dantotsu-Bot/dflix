@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.animeextension.all.hikaridev
 
 import android.app.Application
-import android.util.Log
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
