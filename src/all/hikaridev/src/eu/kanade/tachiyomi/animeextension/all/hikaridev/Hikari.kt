@@ -192,7 +192,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             return buzzheavierExtractor.videosFromUrl(url, prefix, proxyUrl)
         }
         val id = url.toHttpUrl().pathSegments[0]
-        val videoUrl = "https://$hikiMirror/$id/download/"
+        val videoUrl = "https://$hikiMirror/$id"
         return buzzheavierExtractor.videosFromUrl(videoUrl, prefix)
     }
 
