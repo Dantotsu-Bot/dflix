@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.animeextension.all.hikaridev
 import android.app.Application
 import android.content.SharedPreferences
 import androidx.preference.ListPreference
+import androidx.preference.MultiSelectListPreference
 import androidx.preference.PreferenceScreen
 import androidx.preference.SwitchPreferenceCompat
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
@@ -164,9 +165,14 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun videoListParse(response: Response): List<Video> {
         val data = response.parseAs<List<EmbedDto>>()
 
+        val selectedProviders = preferences.getStringSet(PREF_PROVIDER_KEY, PREF_PROVIDERS_DEFAULT)?.map(String::lowercase)?.toSet() ?: emptySet()
+
         return data.parallelCatchingFlatMapBlocking { embed ->
-            val prefix = getEmbedTypeName(embed.embedType) + embed.embedName
             val embedName = embed.embedName.lowercase()
+
+            if (embedName !in selectedProviders) return@parallelCatchingFlatMapBlocking emptyList()
+
+            val prefix = getEmbedTypeName(embed.embedType) + embed.embedName
 
             when (embedName) {
                 "streamwish" -> streamwishExtractor.videosFromUrl(embed.embedFrame, videoNameGen = { "$prefix - $it" })
@@ -220,6 +226,16 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         private const val PREF_HOSTER_DEFAULT = ""
         private val PREF_HOSTER_VALUES = arrayOf("") + HOSTER_LIST
         private val PREF_HOSTER_ENTRIES = arrayOf("Any") + HOSTER_LIST
+
+        // Provider
+        private const val PREF_PROVIDER_KEY = "provider_selection"
+        private val PREF_PROVIDERS = arrayOf("Streamwish", "Filemoon", "SV", "PlayerX", "Hiki")
+
+        private val PREF_PROVIDERS_VALUE = arrayOf("streamwish", "filemoon", "sv", "playerx", "hiki")
+
+        private val PREF_DEFAULT_PROVIDERS_VALUE = arrayOf("streamwish", "filemoon", "sv", "playerx", "hiki")
+
+        private val PREF_PROVIDERS_DEFAULT = PREF_DEFAULT_PROVIDERS_VALUE.toSet()
     }
 
     // ============================== Settings ==============================
@@ -259,6 +275,19 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             entryValues = PREF_HOSTER_VALUES
             setDefaultValue(PREF_HOSTER_DEFAULT)
             summary = "%s"
+        }.also(screen::addPreference)
+
+        MultiSelectListPreference(screen.context).apply {
+            key = PREF_PROVIDER_KEY
+            title = "Enable/Disable Video Providers"
+            entries = PREF_PROVIDERS
+            entryValues = PREF_PROVIDERS_VALUE
+            setDefaultValue(PREF_PROVIDERS_DEFAULT)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                @Suppress("UNCHECKED_CAST")
+                preferences.edit().putStringSet(key, newValue as Set<String>).commit()
+            }
         }.also(screen::addPreference)
 
         FilemoonExtractor.addSubtitlePref(screen)
