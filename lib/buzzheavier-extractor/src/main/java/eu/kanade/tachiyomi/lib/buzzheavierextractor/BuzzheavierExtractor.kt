@@ -27,7 +27,7 @@ class BuzzheavierExtractor(
             add("Host", httpUrl.host)
             add("HX-Current-URL", url)
             add("HX-Request", "true")
-            add("Referer", url)
+            add("Referer", "https://${httpUrl.host}")
         }.build()
 
         val videoHeaders = headers.newBuilder().apply {
