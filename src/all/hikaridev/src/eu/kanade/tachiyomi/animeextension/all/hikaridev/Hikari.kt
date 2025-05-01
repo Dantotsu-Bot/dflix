@@ -70,10 +70,12 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun latestUpdatesParse(response: Response): AnimesPage {
         val parsed = response.parseAs<RecentResponse>()
 
+        val preferEnglish = preferences.getTitleLang
+
         val animeList = parsed.results.map {
             SAnime.create().apply {
                 url = it.uid.toString()
-                title = it.title_en ?: it.title
+                title = if (preferEnglish) it.title_en?.takeUnless(String::isBlank) ?: it.title else it.title
                 thumbnail_url = it.imageUrl
             }
         }
