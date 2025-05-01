@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.all.hikaridev
+package eu.kanade.tachiyomi.animeextension.all.hikari
 
 import android.app.Application
 import android.content.SharedPreferences
@@ -28,13 +28,15 @@ import uy.kohesive.injekt.api.get
 
 class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
-    override val name = "Hikari_Dev"
+    override val name = "Hikari_dev"
 
-    override val baseUrl = "https://hikari.gg"
     private val proxyUrl = "https://hikari.gg/hiki-proxy/extract/"
-    private val apiUrl = "https://api.hikari.gg"
+    private val apiUrl = "https://api.hikari.gg/api"
+    override val baseUrl = "https://hikari.gg"
 
     override val lang = "all"
+
+    override val versionId = 2
 
     override val supportsLatest = true
 
@@ -49,37 +51,25 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================== Popular ===============================
 
-    override fun popularAnimeRequest(page: Int): Request =
-        GET("$apiUrl/api/anime/upcoming/?page=$page")
+    override fun popularAnimeRequest(page: Int) = searchAnimeRequest(page, "", AnimeFilterList())
 
-    override fun popularAnimeParse(response: Response): AnimesPage {
-        val parsed = response.parseAs<PopularResponse>()
-        val preferEnglish = true
-
-        val hasNextPage = false
-        val animeList = parsed.results.map { it.toSAnime(preferEnglish) }
-
-        return AnimesPage(animeList, hasNextPage)
-    }
+    override fun popularAnimeParse(response: Response) = searchAnimeParse(response)
 
     // =============================== Latest ===============================
 
-    override fun latestUpdatesRequest(page: Int): Request =
-        GET("$apiUrl/api/episode/new/?limit=300&language=EN")
+    override fun latestUpdatesRequest(page: Int): Request {
+        val url = "$apiUrl/episode/new/".toHttpUrl().newBuilder().apply {
+            addQueryParameter("limit", "100")
+            addQueryParameter("language", "EN")
+        }.build()
+        return GET(url, headers)
+    }
 
     override fun latestUpdatesParse(response: Response): AnimesPage {
-        val parsed = response.parseAs<RecentResponse>()
+        val data = response.parseAs<CatalogResponseDto<LatestEpisodeDto>>()
+        val preferEnglish = preferences.getTitleLang
 
-        val preferEnglish = true
-
-        val animeList = parsed.results.map {
-            SAnime.create().apply {
-                url = it.uid.toString()
-                title = if (preferEnglish) it.title_en?.takeUnless(String::isBlank) ?: it.title else it.title
-                thumbnail_url = it.imageUrl
-            }
-        }
-
+        val animeList = data.results.distinctBy { it.uid }.map { it.toSAnime(preferEnglish) }
         return AnimesPage(animeList, false)
     }
 
@@ -98,12 +88,12 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             }
         }.build()
 
-        return GET(url)
+        return GET(url, headers)
     }
 
     override fun searchAnimeParse(response: Response): AnimesPage {
-        val data = response.parseAs<SearchResponse<AnimeDTO>>()
-        val preferEnglish = true
+        val data = response.parseAs<CatalogResponseDto<AnimeDto>>()
+        val preferEnglish = preferences.getTitleLang
 
         val animeList = data.results.map { it.toSAnime(preferEnglish) }
         val hasNextPage = data.next != null
@@ -119,38 +109,33 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         SeasonFilter(),
         YearFilter(),
         GenreFilter(),
-        LanguageFilter()
+        LanguageFilter(),
     )
 
     // =========================== Anime Details ============================
 
-    override fun animeDetailsRequest(anime: SAnime): Request =
-        GET("$apiUrl/api/anime/uid/${anime.url}/")
+    override fun getAnimeUrl(anime: SAnime): String {
+        return "$baseUrl/info/${anime.url}"
+    }
+
+    override fun animeDetailsRequest(anime: SAnime): Request {
+        return GET("$apiUrl/anime/uid/${anime.url}/", headers)
+    }
 
     override fun animeDetailsParse(response: Response): SAnime {
-        val parsed = response.parseAs<AnimeDTO>()
-
-        val preferEnglish = true
-
-        return parsed.toSAnime(preferEnglish)
+        return response.parseAs<AnimeDto>().toSAnime(preferences.getTitleLang)
     }
 
     // ============================== Episodes ==============================
 
-    override fun episodeListRequest(anime: SAnime): Request =
-        GET("$apiUrl/api/episode/uid/${anime.url}/")
+    override fun episodeListRequest(anime: SAnime): Request {
+        return GET("$apiUrl/episode/uid/${anime.url}/", headers)
+    }
 
     override fun episodeListParse(response: Response): List<SEpisode> {
-        val episodes = response.parseAs<List<EpisodeDTO>>()
-        val uid = response.request.url.pathSegments[3]
+        val guid = response.request.url.pathSegments[3]
 
-        return episodes.map { ep ->
-            SEpisode.create().apply {
-                url = "/$uid/${ep.ep_id_name}/"
-                name = "${ep.ep_id_name} - ${ep.ep_name}"
-                episode_number = ep.ep_id_name.toFloatOrNull() ?: 0f
-            }
-        }.asReversed()
+        return response.parseAs<List<EpisodeDto>>().map { it.toSEpisode(guid) }.reversed()
     }
 
     // ============================ Video Links =============================
@@ -171,11 +156,13 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         }
     }
 
-    override fun videoListRequest(episode: SEpisode): Request =
-        GET("$apiUrl/embed/${episode.url}")
+    override fun videoListRequest(episode: SEpisode): Request {
+        val (guid, epId) = episode.url.split("-")
+        return GET("$apiUrl/embed/$guid/$epId/", headers)
+    }
 
     override fun videoListParse(response: Response): List<Video> {
-        val data = response.parseAs<List<VideoDTO>>()
+        val data = response.parseAs<List<EmbedDto>>()
 
         return data.parallelCatchingFlatMapBlocking { embed ->
             val prefix = getEmbedTypeName(embed.embedType) + embed.embedName
@@ -209,32 +196,6 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================= Utilities ==============================
 
-    private fun AnimeDTO.toSAnime(preferEnglish: Boolean): SAnime {
-        return SAnime.create().apply {
-            url = uid
-            title = if (preferEnglish) ani_ename?.takeUnless(String::isBlank) ?: ani_name else ani_name
-            artist = ani_studio
-            author = ani_producers
-            description = ani_synopsis
-            genre = ani_genre
-            status = when (ani_stats) {
-                2 -> SAnime.COMPLETED
-                3 -> SAnime.ONGOING
-                else -> SAnime.UNKNOWN
-            }
-            thumbnail_url = ani_poster
-            initialized = true
-        }
-    }
-
-    override fun getAnimeUrl(anime: SAnime): String {
-        return "$baseUrl/info/${anime.url}"
-    }
-
-    override fun getEpisodeUrl(episode: SEpisode): String {
-        return "$baseUrl/watch/${episode.url}"
-    }
-
     companion object {
         private val QUALITY_REGEX = Regex("""(\d+)p""")
 
@@ -262,6 +223,9 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     }
 
     // ============================== Settings ==============================
+
+    private val SharedPreferences.getTitleLang
+        get() = getBoolean(PREF_ENGLISH_TITLE_KEY, PREF_ENGLISH_TITLE_DEFAULT)
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         SwitchPreferenceCompat(screen.context).apply {
