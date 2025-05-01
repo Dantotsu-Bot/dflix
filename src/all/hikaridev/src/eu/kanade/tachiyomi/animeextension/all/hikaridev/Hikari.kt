@@ -61,7 +61,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun latestUpdatesParse(response: Response): AnimesPage {
         val parsed = response.parseAs<RecentResponse>()
 
-        val preferEnglish = preferences.getTitleLang
+        val preferEnglish = preferences.getString(PREF_SUB_KEY, PREF_SUB_DEFAULT)!!
 
         val animeList = parsed.results.map {
             SAnime.create().apply {
@@ -94,7 +94,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override fun searchAnimeParse(response: Response): AnimesPage {
         val data = response.parseAs<SearchResponse<AnimeDTO>>()
-        val preferEnglish = preferences.getTitleLang
+        val preferEnglish = preferences.getString(PREF_SUB_KEY, PREF_SUB_DEFAULT)!!
 
         val animeList = data.results.map { it.toSAnime(preferEnglish) }
         val hasNextPage = data.next != null
@@ -121,7 +121,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun animeDetailsParse(response: Response): SAnime {
         val parsed = response.parseAs<AnimeDTO>()
 
-        val preferEnglish = preferences.getTitleLang
+        val preferEnglish = preferences.getString(PREF_SUB_KEY, PREF_SUB_DEFAULT)!!
 
         return parsed.toSAnime(preferEnglish)
     }
@@ -254,15 +254,17 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================== Settings ==============================
 
-    private val SharedPreferences.getTitleLang
-        get() = getBoolean(PREF_ENGLISH_TITLE_KEY, PREF_ENGLISH_TITLE_DEFAULT)
-
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        SwitchPreferenceCompat(screen.context).apply {
+        val langPref = SwitchPreferenceCompat(screen.context).apply {
             key = PREF_ENGLISH_TITLE_KEY
-            title = "Prefer english titles"
+            title = "Prefer English titles"
             setDefaultValue(PREF_ENGLISH_TITLE_DEFAULT)
-        }.also(screen::addPreference)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val new = newValue as Boolean
+                preferences.edit().putBoolean(key, new).commit()
+            }
+        }
 
         ListPreference(screen.context).apply {
             key = PREF_QUALITY_KEY
@@ -291,6 +293,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             summary = "%s"
         }.also(screen::addPreference)
 
+        screen.addPreference(langPref)
         FilemoonExtractor.addSubtitlePref(screen)
         SavefileExtractor.addSubtitlePref(screen)
     }
