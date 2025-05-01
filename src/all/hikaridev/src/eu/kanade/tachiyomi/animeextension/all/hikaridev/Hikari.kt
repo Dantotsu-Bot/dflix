@@ -241,7 +241,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         private const val PREF_HIKI_KEY = "preferred_hiki_mirror"
         private const val PREF_HIKI_DEFAULT = "hiki"
         private val PREF_HIKI_VALUES = arrayOf("hiki", "buzzheavier.com", "bzzhr.co", "fuckingfast.net")
-        private val PREF_HIKI_ENTRIES = arrayOf("") + PREF_QUALITY_VALUES
+        private val PREF_HIKI_ENTRIES = PREF_HIKI_VALUES
 
         // Provider
         private const val PREF_PROVIDER_KEY = "provider_selection"
