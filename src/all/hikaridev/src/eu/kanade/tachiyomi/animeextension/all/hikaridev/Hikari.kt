@@ -49,18 +49,9 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================== Popular ===============================
 
-    override fun popularAnimeRequest(page: Int): Request =
-        GET("$apiUrl/api/anime/upcoming/?page=$page")
+    override fun popularAnimeRequest(page: Int) = searchAnimeRequest(page, "", AnimeFilterList())
 
-    override fun popularAnimeParse(response: Response): AnimesPage {
-        val parsed = response.parseAs<PopularResponse>()
-        val preferEnglish = preferences.getTitleLang
-
-        val hasNextPage = false
-        val animeList = parsed.results.map { it.toSAnime(preferEnglish) }
-
-        return AnimesPage(animeList, hasNextPage)
-    }
+    override fun popularAnimeParse(response: Response) = searchAnimeParse(response)
 
     // =============================== Latest ===============================
 
