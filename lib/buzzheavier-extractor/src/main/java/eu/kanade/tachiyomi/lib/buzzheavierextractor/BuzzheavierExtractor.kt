@@ -22,19 +22,23 @@ class BuzzheavierExtractor(
         val httpUrl = url.toHttpUrl()
         val id = httpUrl.pathSegments.first()
 
+        val client = client.newBuilder()
+            .followRedirects(false)
+            .build()
+
         val dlHeaders = headers.newBuilder().apply {
             add("Accept", "*/*")
             add("Host", httpUrl.host)
             add("HX-Current-URL", url)
             add("HX-Request", "true")
-            add("Referer", "https://${httpUrl.host}")
+            add("Referer", url)
         }.build()
 
         val videoHeaders = headers.newBuilder().apply {
             add("Referer", url)
         }.build()
 
-        val path = client.newCall(GET("$url/download", videoHeaders)).execute().headers["hx-redirect"].orEmpty()
+        val path = client.newCall(GET("$url/download", dlHeaders)).execute().headers["hx-redirect"].orEmpty()
 
         return if (path.isNotEmpty()) {
             val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
