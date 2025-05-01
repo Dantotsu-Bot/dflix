@@ -61,6 +61,12 @@ data class RecentDTO(
 )
 
 @Serializable
+data classSearchResponse<T>(
+    val next: String? = null,
+    val results: List<T>,
+)
+
+@Serializable
 data class EpisodeDTO(
     val ep_id_name: String,
     val ep_name: String,
@@ -68,7 +74,10 @@ data class EpisodeDTO(
 
 @Serializable
 data class VideoDTO(
-    val embed_type: String,
-    val embed_name: String,
-    val embed_frame: String,
+    @SerialName("embed_type")
+    val embedType: String,
+    @SerialName("embed_name")
+    val embedName: String,
+    @SerialName("embed_frame")
+    val embedFrame: String,
 )

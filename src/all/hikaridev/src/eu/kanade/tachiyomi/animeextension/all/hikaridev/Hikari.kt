@@ -1,22 +1,26 @@
 package eu.kanade.tachiyomi.animeextension.all.hikaridev
 
 import android.app.Application
+import android.content.SharedPreferences
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
+import androidx.preference.SwitchPreferenceCompat
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
-import eu.kanade.tachiyomi.animesource.model.AnimeFilter
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.lib.buzzheavierextractor.BuzzheavierExtractor
 import eu.kanade.tachiyomi.lib.chillxextractor.ChillxExtractor
 import eu.kanade.tachiyomi.lib.filemoonextractor.FilemoonExtractor
+import eu.kanade.tachiyomi.lib.savefileextractor.SavefileExtractor
 import eu.kanade.tachiyomi.lib.streamwishextractor.StreamWishExtractor
-import eu.kanade.tachiyomi.lib.vidhideextractor.VidHideExtractor
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.util.parallelCatchingFlatMapBlocking
 import eu.kanade.tachiyomi.util.parseAs
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import uy.kohesive.injekt.Injekt
@@ -27,7 +31,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override val name = "Hikari_Dev"
 
     override val baseUrl = "https://hikari.gg"
-
+    private val proxyUrl = "https://hikari.gg/hiki-proxy/extract/"
     private val apiUrl = "https://api.hikari.gg"
 
     override val lang = "all"
@@ -50,9 +54,10 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override fun popularAnimeParse(response: Response): AnimesPage {
         val parsed = response.parseAs<PopularResponse>()
+        val preferEnglish = preferences.getTitleLang
 
         val hasNextPage = false
-        val animeList = parsed.results.map { it.toSAnime() }
+        val animeList = parsed.results.map { it.toSAnime(preferEnglish) }
 
         return AnimesPage(animeList, hasNextPage)
     }
@@ -79,27 +84,40 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     // =============================== Search ===============================
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
-        TODO()
+        val url = "$apiUrl/anime/".toHttpUrl().newBuilder().apply {
+            addQueryParameter("sort", "created_at")
+            addQueryParameter("order", "asc")
+            addQueryParameter("page", page.toString())
+            filters.filterIsInstance<UriFilter>().forEach {
+                it.addToUri(this)
+            }
+            if (query.isNotEmpty()) {
+                addQueryParameter("search", query)
+            }
+        }.build()
+
+        return GET(url)
     }
 
-    override fun searchAnimeParse(response: Response): AnimesPage =
-        TODO()
+    override fun searchAnimeParse(response: Response): AnimesPage {
+        val data = response.parseAs<SearchResponse<AnimeDTO>>()
+        val preferEnglish = preferences.getTitleLang
+
+        val animeList = data.results.map { it.toSAnime(preferEnglish) }
+        val hasNextPage = data.next != null
+
+        return AnimesPage(animeList, hasNextPage)
+    }
 
     // ============================== Filters ===============================
 
     override fun getFilterList(): AnimeFilterList = AnimeFilterList(
-        AnimeFilter.Header("Note: text search ignores filters"),
-        AnimeFilter.Separator(),
         TypeFilter(),
-        CountryFilter(),
         StatusFilter(),
-        RatingFilter(),
-        SourceFilter(),
         SeasonFilter(),
-        LanguageFilter(),
-        SortFilter(),
-        AiringDateFilter(),
+        YearFilter(),
         GenreFilter(),
+        LanguageFilter(),
     )
 
     // =========================== Anime Details ============================
@@ -110,7 +128,9 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun animeDetailsParse(response: Response): SAnime {
         val parsed = response.parseAs<AnimeDTO>()
 
-        return parsed.toSAnime()
+        val preferEnglish = preferences.getTitleLang
+
+        return parsed.toSAnime(preferEnglish)
     }
 
     // ============================== Episodes ==============================
@@ -133,36 +153,64 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================ Video Links =============================
 
-    private val filemoonExtractor by lazy { FilemoonExtractor(client) }
-    private val vidHideExtractor by lazy { VidHideExtractor(client, headers) }
+    private val filemoonExtractor by lazy { FilemoonExtractor(client, preferences) }
+    private val savefileExtractor by lazy { SavefileExtractor(client, preferences) }
+    private val buzzheavierExtractor by lazy { BuzzheavierExtractor(client, headers) }
     private val chillxExtractor by lazy { ChillxExtractor(client, headers) }
     private val streamwishExtractor by lazy { StreamWishExtractor(client, headers) }
-    private val embedRegex = Regex("""getEmbed\(\s*(\d+)\s*,\s*(\d+)\s*,\s*'(\d+)'""")
+
+    private fun getEmbedTypeName(type: String): String {
+        return when (type) {
+            "2" -> "[SUB] "
+            "3" -> "[DUB] "
+            "4" -> "[MULTI AUDIO] "
+            "8" -> "[HARD-SUB] "
+            else -> ""
+        }
+    }
 
     override fun videoListRequest(episode: SEpisode): Request =
-        GET("$apiUrl/api/embed/${episode.url}")
+        GET("$apiUrl/embed/${episode.url}")
 
     override fun videoListParse(response: Response): List<Video> {
-        TODO()
+        val data = response.parseAs<List<VideoDTO>>()
+
+        return data.parallelCatchingFlatMapBlocking { embed ->
+            val prefix = getEmbedTypeName(embed.embedType) + embed.embedName
+            val embedName = embed.embedName.lowercase()
+
+            when (embedName) {
+                "streamwish" -> streamwishExtractor.videosFromUrl(embed.embedFrame, videoNameGen = { "$prefix - $it" })
+                "filemoon" -> filemoonExtractor.videosFromUrl(embed.embedFrame, "$prefix - ")
+                "sv" -> savefileExtractor.videosFromUrl(embed.embedFrame, "$prefix - ")
+                "playerx" -> chillxExtractor.videoFromUrl(embed.embedFrame, "$prefix - ")
+                "hiki" -> buzzheavierExtractor.videosFromUrl(embed.embedFrame, "$prefix - ", proxyUrl)
+                else -> emptyList()
+            }
+        }
     }
 
     override fun List<Video>.sort(): List<Video> {
         val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
+        val type = preferences.getString(PREF_TYPE_KEY, PREF_TYPE_DEFAULT)!!
+        val hoster = preferences.getString(PREF_HOSTER_KEY, PREF_HOSTER_DEFAULT)!!
 
         return sortedWith(
             compareBy(
+                { it.quality.startsWith(type) },
                 { it.quality.contains(quality) },
                 { QUALITY_REGEX.find(it.quality)?.groupValues?.get(1)?.toIntOrNull() ?: 0 },
+                { it.quality.contains(hoster, true) },
             ),
         ).reversed()
     }
 
     // ============================= Utilities ==============================
 
-    private fun AnimeDTO.toSAnime(): SAnime {
+    private fun AnimeDTO.toSAnime(preferEnglish: Boolean): SAnime {
         return SAnime.create().apply {
             url = uid
-            title = ani_ename.ifEmpty { ani_name }
+            title = if (preferEnglish) ani_ename?.takeUnless(String::isBlank) ?: ani_name else ani_name
             artist = ani_studio
             author = ani_producers
             description = ani_synopsis
@@ -188,17 +236,41 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     companion object {
         private val QUALITY_REGEX = Regex("""(\d+)p""")
 
+        private const val PREF_ENGLISH_TITLE_KEY = "preferred_title_lang"
+        private const val PREF_ENGLISH_TITLE_DEFAULT = true
+
         private const val PREF_QUALITY_KEY = "preferred_quality"
         private const val PREF_QUALITY_DEFAULT = "1080"
         private val PREF_QUALITY_VALUES = arrayOf("1080", "720", "480", "360")
         private val PREF_QUALITY_ENTRIES = PREF_QUALITY_VALUES.map {
             "${it}p"
         }.toTypedArray()
+
+        private val TYPE_LIST = arrayOf("[SUB] ", "[DUB] ", "[MULTI AUDIO] ", "[HARD-SUB] ")
+        private const val PREF_TYPE_KEY = "pref_type"
+        private const val PREF_TYPE_DEFAULT = ""
+        private val PREF_TYPE_VALUES = arrayOf("") + TYPE_LIST
+        private val PREF_TYPE_ENTRIES = arrayOf("Any") + TYPE_LIST
+
+        private val HOSTER_LIST = arrayOf("Streamwish", "Filemoon", "SV", "PlayerX", "Hiki")
+        private const val PREF_HOSTER_KEY = "pref_hoster"
+        private const val PREF_HOSTER_DEFAULT = ""
+        private val PREF_HOSTER_VALUES = arrayOf("") + HOSTER_LIST
+        private val PREF_HOSTER_ENTRIES = arrayOf("Any") + HOSTER_LIST
     }
 
     // ============================== Settings ==============================
 
+    private val SharedPreferences.getTitleLang
+        get() = getBoolean(PREF_ENGLISH_TITLE_KEY, PREF_ENGLISH_TITLE_DEFAULT)
+
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        SwitchPreferenceCompat(screen.context).apply {
+            key = PREF_ENGLISH_TITLE_KEY
+            title = "Prefer english titles"
+            setDefaultValue(PREF_ENGLISH_TITLE_DEFAULT)
+        }.also(screen::addPreference)
+
         ListPreference(screen.context).apply {
             key = PREF_QUALITY_KEY
             title = "Preferred quality"
@@ -206,13 +278,27 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             entryValues = PREF_QUALITY_VALUES
             setDefaultValue(PREF_QUALITY_DEFAULT)
             summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(key, entry).commit()
-            }
         }.also(screen::addPreference)
+
+        ListPreference(screen.context).apply {
+            key = PREF_TYPE_KEY
+            title = "Preferred type"
+            entries = PREF_TYPE_ENTRIES
+            entryValues = PREF_TYPE_VALUES
+            setDefaultValue(PREF_TYPE_DEFAULT)
+            summary = "%s"
+        }.also(screen::addPreference)
+
+        ListPreference(screen.context).apply {
+            key = PREF_HOSTER_KEY
+            title = "Preferred hoster"
+            entries = PREF_HOSTER_ENTRIES
+            entryValues = PREF_HOSTER_VALUES
+            setDefaultValue(PREF_HOSTER_DEFAULT)
+            summary = "%s"
+        }.also(screen::addPreference)
+
+        FilemoonExtractor.addSubtitlePref(screen)
+        SavefileExtractor.addSubtitlePref(screen)
     }
 }
