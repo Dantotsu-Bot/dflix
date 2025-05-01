@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Aniyomi: Dflix",
+    "pkg": "eu.kanade.tachiyomi.animeextension.all.dflix",
+    "apk": "aniyomi-all.dflix-v14.18.apk",
+    "lang": "all",
+    "code": 18,
+    "version": "14.18",
+    "nsfw": 0,
+    "hasReadme": 0,
+    "hasChangelog": 0,
+    "sources": [
+      {
+        "name": "Dflix",
+        "lang": "all",
+        "id": "2130205683428550894",
+        "baseUrl": "https://dflix.discoveryftp.net",
+        "versionId": 1
+      }
+    ]
+  },
+  {
+    "name": "Aniyomi: Hikari_Dev",
+    "pkg": "eu.kanade.tachiyomi.animeextension.all.hikaridev",
+    "apk": "aniyomi-all.hikaridev-v14.27.apk",
+    "lang": "all",
+    "code": 27,
+    "version": "14.27",
+    "nsfw": 0,
+    "hasReadme": 0,
+    "hasChangelog": 0,
+    "sources": [
+      {
+        "name": "Hikari_dev",
+        "lang": "all",
+        "id": "7850553025860255666",
+        "baseUrl": "https://hikari.gg",
+        "versionId": 2
+      }
+    ]
+  }
+]
