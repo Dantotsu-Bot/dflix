@@ -54,7 +54,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override fun popularAnimeParse(response: Response): AnimesPage {
         val parsed = response.parseAs<PopularResponse>()
-        val preferEnglish = preferences.getTitleLang
+        val preferEnglish = true
 
         val hasNextPage = false
         val animeList = parsed.results.map { it.toSAnime(preferEnglish) }
@@ -70,7 +70,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun latestUpdatesParse(response: Response): AnimesPage {
         val parsed = response.parseAs<RecentResponse>()
 
-        val preferEnglish = preferences.getTitleLang
+        val preferEnglish = true
 
         val animeList = parsed.results.map {
             SAnime.create().apply {
@@ -103,7 +103,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override fun searchAnimeParse(response: Response): AnimesPage {
         val data = response.parseAs<SearchResponse<AnimeDTO>>()
-        val preferEnglish = preferences.getTitleLang
+        val preferEnglish = true
 
         val animeList = data.results.map { it.toSAnime(preferEnglish) }
         val hasNextPage = data.next != null
@@ -130,7 +130,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun animeDetailsParse(response: Response): SAnime {
         val parsed = response.parseAs<AnimeDTO>()
 
-        val preferEnglish = preferences.getTitleLang
+        val preferEnglish = true
 
         return parsed.toSAnime(preferEnglish)
     }
@@ -262,9 +262,6 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     }
 
     // ============================== Settings ==============================
-
-    private val SharedPreferences.getTitleLang
-        get() = getBoolean(PREF_ENGLISH_TITLE_KEY, PREF_ENGLISH_TITLE_DEFAULT)
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         SwitchPreferenceCompat(screen.context).apply {
