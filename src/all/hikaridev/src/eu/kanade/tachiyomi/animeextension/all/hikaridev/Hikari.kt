@@ -28,10 +28,6 @@ import uy.kohesive.injekt.api.get
 
 class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
-    private val preferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
-    }
-
     override val name = "Hikari_Dev"
 
     override val baseUrl = "https://hikari.gg"
@@ -47,15 +43,24 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         add("Referer", "$baseUrl/")
     }
 
-    private val preferEnglish by lazy {
-        preferences.getString(PREF_SUB_KEY, PREF_SUB_DEFAULT)!!
+    private val preferences by lazy {
+        Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
 
     // ============================== Popular ===============================
 
-    override fun popularAnimeRequest(page: Int) = searchAnimeRequest(page, "", AnimeFilterList())
+    override fun popularAnimeRequest(page: Int): Request =
+        GET("$apiUrl/api/anime/upcoming/?page=$page")
 
-    override fun popularAnimeParse(response: Response) = searchAnimeParse(response)
+    override fun popularAnimeParse(response: Response): AnimesPage {
+        val parsed = response.parseAs<PopularResponse>()
+        val preferEnglish = preferences.getTitleLang
+
+        val hasNextPage = false
+        val animeList = parsed.results.map { it.toSAnime(preferEnglish) }
+
+        return AnimesPage(animeList, hasNextPage)
+    }
 
     // =============================== Latest ===============================
 
@@ -64,6 +69,8 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override fun latestUpdatesParse(response: Response): AnimesPage {
         val parsed = response.parseAs<RecentResponse>()
+
+        val preferEnglish = preferences.getTitleLang
 
         val animeList = parsed.results.map {
             SAnime.create().apply {
@@ -96,6 +103,8 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override fun searchAnimeParse(response: Response): AnimesPage {
         val data = response.parseAs<SearchResponse<AnimeDTO>>()
+        val preferEnglish = preferences.getTitleLang
+
         val animeList = data.results.map { it.toSAnime(preferEnglish) }
         val hasNextPage = data.next != null
 
@@ -110,7 +119,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         SeasonFilter(),
         YearFilter(),
         GenreFilter(),
-        LanguageFilter(),
+        LanguageFilter()
     )
 
     // =========================== Anime Details ============================
@@ -120,6 +129,8 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     override fun animeDetailsParse(response: Response): SAnime {
         val parsed = response.parseAs<AnimeDTO>()
+
+        val preferEnglish = preferences.getTitleLang
 
         return parsed.toSAnime(preferEnglish)
     }
@@ -252,17 +263,15 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
     // ============================== Settings ==============================
 
-    override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        val langPref = SwitchPreferenceCompat(screen.context).apply {
-            key = PREF_ENGLISH_TITLE_KEY
-            title = "Prefer English titles"
-            setDefaultValue(PREF_ENGLISH_TITLE_DEFAULT)
+    private val SharedPreferences.getTitleLang
+        get() = getBoolean(PREF_ENGLISH_TITLE_KEY, PREF_ENGLISH_TITLE_DEFAULT)
 
-            setOnPreferenceChangeListener { _, newValue ->
-                val new = newValue as Boolean
-                preferences.edit().putBoolean(key, new).commit()
-            }
-        }
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        SwitchPreferenceCompat(screen.context).apply {
+            key = PREF_ENGLISH_TITLE_KEY
+            title = "Prefer english titles"
+            setDefaultValue(PREF_ENGLISH_TITLE_DEFAULT)
+        }.also(screen::addPreference)
 
         ListPreference(screen.context).apply {
             key = PREF_QUALITY_KEY
@@ -291,7 +300,6 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             summary = "%s"
         }.also(screen::addPreference)
 
-        screen.addPreference(langPref)
         FilemoonExtractor.addSubtitlePref(screen)
         SavefileExtractor.addSubtitlePref(screen)
     }
