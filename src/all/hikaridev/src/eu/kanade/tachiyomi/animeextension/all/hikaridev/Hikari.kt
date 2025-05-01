@@ -179,10 +179,21 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
                 "filemoon" -> filemoonExtractor.videosFromUrl(embed.embedFrame, "$prefix - ")
                 "sv" -> savefileExtractor.videosFromUrl(embed.embedFrame, "$prefix - ")
                 "playerx" -> chillxExtractor.videoFromUrl(embed.embedFrame, "$prefix - ")
-                "hiki" -> buzzheavierExtractor.videosFromUrl(embed.embedFrame, "$prefix - ", proxyUrl)
+                "hiki" -> hikiExtraction(embed.embedFrame, "$prefix - ")
                 else -> emptyList()
             }
         }
+    }
+
+    private fun hikiExtraction(url: String, prefix: String): List<Video> {
+        val hikiMirror = preferences.getString(PREF_HIKI_KEY, PREF_HIKI_DEFAULT)!!
+
+        if (hikiMirror == "hiki") {
+            return buzzheavierExtractor.videosFromUrl(url, prefix, proxyUrl)
+        }
+        val id = url.toHttpUrl().pathSegments[0]
+        val videoUrl = "https://$hikiMirror/$id/download/"
+        return buzzheavierExtractor.videosFromUrl(videoUrl, prefix)
     }
 
     override fun List<Video>.sort(): List<Video> {
@@ -226,6 +237,11 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
         private const val PREF_HOSTER_DEFAULT = ""
         private val PREF_HOSTER_VALUES = arrayOf("") + HOSTER_LIST
         private val PREF_HOSTER_ENTRIES = arrayOf("Any") + HOSTER_LIST
+
+        private const val PREF_HIKI_KEY = "preferred_hiki_mirror"
+        private const val PREF_HIKI_DEFAULT = "hiki"
+        private val PREF_HIKI_VALUES = arrayOf("hiki", "buzzheavier.com", "bzzhr.co", "fuckingfast.net")
+        private val PREF_HIKI_ENTRIES = arrayOf("") + PREF_QUALITY_VALUES
 
         // Provider
         private const val PREF_PROVIDER_KEY = "provider_selection"
@@ -288,6 +304,15 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
                 @Suppress("UNCHECKED_CAST")
                 preferences.edit().putStringSet(key, newValue as Set<String>).commit()
             }
+        }.also(screen::addPreference)
+
+        ListPreference(screen.context).apply {
+            key = PREF_HIKI_KEY
+            title = "Hiki provider mirrors"
+            entries = PREF_HIKI_ENTRIES
+            entryValues = PREF_HIKI_VALUES
+            setDefaultValue(PREF_HIKI_DEFAULT)
+            summary = "%s"
         }.also(screen::addPreference)
 
         FilemoonExtractor.addSubtitlePref(screen)
