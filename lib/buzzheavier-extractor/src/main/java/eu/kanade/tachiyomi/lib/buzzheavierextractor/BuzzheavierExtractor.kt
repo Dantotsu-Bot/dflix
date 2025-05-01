@@ -22,11 +22,6 @@ class BuzzheavierExtractor(
         val httpUrl = url.toHttpUrl()
         val id = httpUrl.pathSegments.first()
 
-        val client = client.newBuilder()
-            .followRedirects(false)
-            .followSslRedirects(false)
-            .build()
-
         val dlHeaders = headers.newBuilder().apply {
             add("Accept", "*/*")
             add("Host", httpUrl.host)
@@ -39,10 +34,12 @@ class BuzzheavierExtractor(
             add("Referer", url)
         }.build()
 
-        val path = client.newCall(GET("$url/download", dlHeaders)).execute().headers["hx-redirect"].orEmpty()
+        val path = client.newCall(
+            GET("https://${httpUrl.host}/$id/download", dlHeaders)
+        ).execute().headers["hx-redirect"].orEmpty()
 
         return if (path.isNotEmpty()) {
-            val videoUrl = "https://${httpUrl.host}$path"
+            val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
             listOf(Video(videoUrl, "${prefix}Video", videoUrl, videoHeaders))
         } else if (proxyUrl?.isNotEmpty() == true) {
             val videoUrl = client.newCall(GET(proxyUrl + id)).execute().parseAs<UrlDto>().url
