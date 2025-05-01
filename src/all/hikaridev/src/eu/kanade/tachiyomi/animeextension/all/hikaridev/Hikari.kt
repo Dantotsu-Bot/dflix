@@ -190,11 +190,10 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
         if (hikiMirror == "hiki") {
             return buzzheavierExtractor.videosFromUrl(url, prefix, proxyUrl)
-        } else {
-            val id = url.toHttpUrl().pathSegments[0]
-            val videoUrl = "https://$hikiMirror/$id"
-            return buzzheavierExtractor.videosFromUrl(videoUrl, prefix)
         }
+        val id = url.toHttpUrl().pathSegments[0]
+        val videoUrl = "https://$hikiMirror/$id"
+        return buzzheavierExtractor.videosFromUrl(videoUrl, prefix)
     }
 
     override fun List<Video>.sort(): List<Video> {
