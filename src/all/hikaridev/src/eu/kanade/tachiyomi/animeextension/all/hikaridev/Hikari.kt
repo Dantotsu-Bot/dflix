@@ -160,7 +160,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun videoListParse(response: Response): List<Video> {
         val data = response.parseAs<List<EmbedDto>>()
 
-        val selectedProviders = preferences.getStringSet(PREF_PROVIDER_KEY, PREF_PROVIDERS_DEFAULT)?.map(String::lowercase)?.toSet() ?: emptySet()
+        val selectedProviders = preferences.getStringSet(PREF_PROVIDER_KEY, PREF_PROVIDERS_DEFAULT).map(String::lowercase)?.toSet()
 
         return data.parallelCatchingFlatMapBlocking { embed ->
             val embedName = embed.embedName.lowercase()
@@ -181,7 +181,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     }
 
     private fun hikiExtraction(url: String, prefix: String): List<Video> {
-        val hikiMirror = preferences.getString(PREF_HIKI_KEY, PREF_HIKI_DEFAULT)!!
+        val hikiMirror = preferences.getString(PREF_HIKI_KEY, PREF_HIKI_DEFAULT)
 
         if (hikiMirror == "hiki") {
             return buzzheavierExtractor.videosFromUrl(url, prefix, proxyUrl)
@@ -192,9 +192,9 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     }
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
-        val type = preferences.getString(PREF_TYPE_KEY, PREF_TYPE_DEFAULT)!!
-        val hoster = preferences.getString(PREF_HOSTER_KEY, PREF_HOSTER_DEFAULT)!!
+        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)
+        val type = preferences.getString(PREF_TYPE_KEY, PREF_TYPE_DEFAULT)
+        val hoster = preferences.getString(PREF_HOSTER_KEY, PREF_HOSTER_DEFAULT)
 
         return sortedWith(
             compareBy(
@@ -294,11 +294,6 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             entries = PREF_PROVIDERS
             entryValues = PREF_PROVIDERS_VALUE
             setDefaultValue(PREF_PROVIDERS_DEFAULT)
-
-            setOnPreferenceChangeListener { _, newValue ->
-                @Suppress("UNCHECKED_CAST")
-                preferences.edit().putStringSet(key, newValue as Set<String>).commit()
-            }
         }.also(screen::addPreference)
 
         ListPreference(screen.context).apply {
