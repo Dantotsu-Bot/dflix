@@ -160,7 +160,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun videoListParse(response: Response): List<Video> {
         val data = response.parseAs<List<EmbedDto>>()
 
-        val selectedProviders = preferences.getStringSet(PREF_PROVIDER_KEY, PREF_PROVIDERS_DEFAULT).map(String::lowercase)?.toSet()
+        val selectedProviders = preferences.getStringSet(PREF_PROVIDER_KEY, PREF_PROVIDERS_DEFAULT).map(String::lowercase)?.toSet() ?: emptySet()
 
         return data.parallelCatchingFlatMapBlocking { embed ->
             val embedName = embed.embedName.lowercase()
@@ -294,6 +294,11 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             entries = PREF_PROVIDERS
             entryValues = PREF_PROVIDERS_VALUE
             setDefaultValue(PREF_PROVIDERS_DEFAULT)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                @Suppress("UNCHECKED_CAST")
+                preferences.edit().putStringSet(key, newValue as Set<String>).commit()
+            }
         }.also(screen::addPreference)
 
         ListPreference(screen.context).apply {
