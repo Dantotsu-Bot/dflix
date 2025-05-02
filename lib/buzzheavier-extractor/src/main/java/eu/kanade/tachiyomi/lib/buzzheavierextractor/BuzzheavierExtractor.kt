@@ -52,7 +52,7 @@ class BuzzheavierExtractor(
     }
 
     private fun getSize(url: String): String {
-        val response = client.newCall(Request.Builder().url(url).build()).execute()
+        val response = client.newCall(GET(url).execute()
         response.use {
             if (it.code == 200) {
                 val size = it.header("Content-Length")?.toLongOrNull()
