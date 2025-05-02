@@ -294,6 +294,11 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
             entries = PREF_PROVIDERS
             entryValues = PREF_PROVIDERS_VALUE
             setDefaultValue(PREF_PROVIDERS_DEFAULT)
+
+            setOnPreferenceChangeListener { _, newValue ->
+                @Suppress("UNCHECKED_CAST")
+                preferences.edit().putStringSet(key, newValue as Set<String>).commit()
+            }
         }.also(screen::addPreference)
 
         ListPreference(screen.context).apply {

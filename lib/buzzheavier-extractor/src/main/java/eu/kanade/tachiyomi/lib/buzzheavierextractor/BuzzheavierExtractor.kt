@@ -40,36 +40,13 @@ class BuzzheavierExtractor(
 
         return if (path.isNotEmpty()) {
             val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
-            val size = getSize(videoUrl)
-            listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
+            listOf(Video(videoUrl, "${prefix}Video", videoUrl, videoHeaders))
         } else if (proxyUrl?.isNotEmpty() == true) {
             val videoUrl = client.newCall(GET(proxyUrl + id)).execute().parseAs<UrlDto>().url
-            val size = getSize(videoUrl)
-            listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
+            listOf(Video(videoUrl, "${prefix}Video", videoUrl, videoHeaders))
         } else {
             emptyList()
         }
-    }
-
-    private fun getSize(url: String): String {
-        val response = client.newCall(Request.Builder().url(url).build()).execute()
-        response.use {
-            if (it.code == 200) {
-                val size = it.header("Content-Length")?.toLongOrNull()
-                if (size != null) {
-                    return formatBytes(size)
-                }
-            }
-        }
-        return "Unknown"
-    }
-
-    private fun formatBytes(bytes: Long): String {
-        val unit = 1024
-        if (bytes < unit) return "$bytes B"
-        val exp = (Math.log(bytes.toDouble()) / Math.log(unit.toDouble())).toInt()
-        val pre = "KMGTPE"[exp - 1] + "B"
-        return String.format("%.2f %s", bytes / Math.pow(unit.toDouble(), exp.toDouble()), pre)
     }
 
     @Serializable
