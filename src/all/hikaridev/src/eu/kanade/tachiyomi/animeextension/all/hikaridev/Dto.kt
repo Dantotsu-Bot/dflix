@@ -29,6 +29,8 @@ data class AnimeDto(
     val aniGenre: String? = null,
     @SerialName("ani_studio")
     val aniStudio: String? = null,
+    @SerialName("ani_producers")
+    val aniProducers: String? = null,
     @SerialName("ani_stats")
     val aniStats: Int? = null,
 ) {
@@ -37,7 +39,8 @@ data class AnimeDto(
         title = if (preferEnglish) aniEName?.takeUnless(String::isBlank) ?: aniName else aniName
         thumbnail_url = aniPoster
         genre = aniGenre?.split(",")?.joinToString(transform = String::trim)
-        author = aniStudio
+        artist = aniStudio
+        author = aniProducers?.split(",")?.joinToString(transform = String::trim)
         description = buildString {
             aniSynopsis?.trim()?.let(::append)
             append("\n\n")
