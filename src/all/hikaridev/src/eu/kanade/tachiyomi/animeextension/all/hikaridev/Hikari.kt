@@ -160,7 +160,7 @@ class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
     override fun videoListParse(response: Response): List<Video> {
         val data = response.parseAs<List<EmbedDto>>()
 
-        val selectedProviders = preferences.getStringSet(PREF_PROVIDER_KEY, PREF_PROVIDERS_DEFAULT)?.map(String::lowercase)?.toSet() ?: emptySet()
+        val selectedProviders = preferences.getStringSet(PREF_PROVIDER_KEY, PREF_PROVIDERS_DEFAULT).map(String::lowercase)?.toSet()
 
         return data.parallelCatchingFlatMapBlocking { embed ->
             val embedName = embed.embedName.lowercase()
