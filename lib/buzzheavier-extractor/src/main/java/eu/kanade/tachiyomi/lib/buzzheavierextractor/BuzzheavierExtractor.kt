@@ -52,15 +52,16 @@ class BuzzheavierExtractor(
     }
 
     private fun getSize(url: String): String {
-        return try {
-            val response = client.newCall(url).execute()
-            response.use {
+        val response = client.newCall(Request.Builder().url(url).build()).execute()
+        response.use {
+            if (it.code == 200) {
                 val size = it.header("Content-Length")?.toLongOrNull()
-                size?.let { formatBytes(it) } ?: "Unknown"
+                if (size != null) {
+                    return formatBytes(size)
+                }
             }
-        } catch (e: Exception) {
-            "Unknown"
         }
+        return "Unknown"
     }
 
     private fun formatBytes(bytes: Long): String {
