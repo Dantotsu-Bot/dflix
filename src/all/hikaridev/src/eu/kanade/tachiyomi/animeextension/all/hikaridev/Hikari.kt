@@ -29,7 +29,7 @@ import uy.kohesive.injekt.api.get
 
 class Hikari : AnimeHttpSource(), ConfigurableAnimeSource {
 
-    override val name = "Hikaridev"
+    override val name = "Hikari_dev"
 
     private val proxyUrl = "https://hikari.gg/hiki-proxy/extract/"
     private val apiUrl = "https://api.hikari.gg/api"
