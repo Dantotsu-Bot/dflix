@@ -24,13 +24,18 @@ class BuzzheavierExtractor(
 
         val dlHeaders = headers.newBuilder().apply {
             add("Accept", "*/*")
-            add("Host", httpUrl.host)
+            add("Accept-Encoding", "gzip, deflate, br, zstd")
             add("HX-Current-URL", url)
             add("HX-Request", "true")
+            add("Priority", "u=1, i")
             add("Referer", url)
         }.build()
 
         val videoHeaders = headers.newBuilder().apply {
+            add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+            add("Accept-Encoding", "gzip, deflate, br, zstd")
+            add("Accept-Language", "en-US,en-GB;q=0.9,en;q=0.8")
+            add("Priority", "u=0, i")
             add("Referer", url)
         }.build()
 
