@@ -39,16 +39,15 @@ class BuzzheavierExtractor(
             add("Referer", url)
         }.build()
 
-        val path = executeWithRetry(
-            request = GET("https://${httpUrl.host}/$id/download", dlHeaders),
-            5, listOf(204)).headers["hx-redirect"].orEmpty()
+        val downloadRequest = GET("https://${httpUrl.host}/$id/download", dlHeaders)
+        val path = executeWithRetry(downloadRequest, 5, 204).headers["hx-redirect"].orEmpty()
 
         return if (path.isNotEmpty()) {
             val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
             val size = getSize(videoUrl, videoHeaders)
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else if (proxyUrl?.isNotEmpty() == true) {
-            val videoUrl = executeWithRetry(GET(proxyUrl + id), 5, listOf(200)).parseAs<UrlDto>().url
+            val videoUrl = executeWithRetry(GET(proxyUrl + id), 5, 200).parseAs<UrlDto>().url
             val size = getSize(videoUrl, videoHeaders)
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else {
@@ -57,10 +56,9 @@ class BuzzheavierExtractor(
     }
 
     private fun getSize(url: String, headers: Headers): String {
-        val response = executeWithRetry(
-            request = GET(url, headers), 3, listOf(200))
+        val response = executeWithRetry(GET(url, headers), 3, 200)
         response.use {
-            val size = it.header("Content-Length")?.toLongOrNull()
+            val size = it.header("Content-Length")?.toDoubleOrNull()
             if (size != null) {
                 return formatBytes(size)
             }
@@ -68,33 +66,30 @@ class BuzzheavierExtractor(
         return "Unknown"
     }
 
-    private fun executeWithRetry(request: Request, maxRetries: Int, validCodes: List<Int>): Response {
-        var retries = 0
-        var lastResponse: Response? = null
+    private fun executeWithRetry(request: Request, maxRetries: Int, validCode: Int): Response {
+        var response: Response? = null
 
-        while (retries < maxRetries) {
-            if (lastResponse != null) {
-                lastResponse.close()
+        for (attempt in 0 until maxRetries) {
+            response?.close()
+            response = client.newCall(request).execute()
+
+            if (response.code == validCode) {
+                return response
             }
-            lastResponse = client.newCall(request).execute()
-            if (lastResponse.code in validCodes) {
-                return lastResponse
-            }
-            retries++
-            if (retries < maxRetries) {
+
+            if (attempt < maxRetries - 1) {
                 Thread.sleep(1000)
             }
         }
-        return lastResponse!!
+        return response!!
     }
 
-    private fun formatBytes(bytes: Long): String {
-        val unit = 1024
-        if (bytes < unit) return "$bytes B"
-        val exp = (Math.log(bytes.toDouble()) / Math.log(unit.toDouble())).toInt()
-        val pre = "KMGTPE"[exp - 1] + "B"
-        return String.format("%.2f %s", bytes / Math.pow(unit.toDouble(), exp.toDouble()), pre)
-    }
+    private fun formatBytes(bytes: Double) = when {
+            bytes >= 1 shl 30 -> "%.1f GB".format(bytes / (1 shl 30))
+            bytes >= 1 shl 20 -> "%.1f MB".format(bytes / (1 shl 20))
+            bytes >= 1 shl 10 -> "%.0f kB".format(bytes / (1 shl 10))
+            else -> "$bytes bytes"
+        }
 
     @Serializable
     data class UrlDto(val url: String)
