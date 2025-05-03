@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.lib.buzzheavierextractor
 
-
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
@@ -10,7 +9,8 @@ import kotlinx.serialization.Serializable
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.internal.EMPTY_HEADERS
+import okhttp3.Request
+import okhttp3.Response
 
 class BuzzheavierExtractor(
     private val client: OkHttpClient,
@@ -34,34 +34,53 @@ class BuzzheavierExtractor(
             add("Referer", url)
         }.build()
 
-        val path = client.newCall(
-            GET("https://${httpUrl.host}/$id/download", dlHeaders)
-        ).execute().headers["hx-redirect"].orEmpty()
+        val path = executeWithRetry(
+            request = GET("https://${httpUrl.host}/$id/download", dlHeaders),
+            5, listOf(204)).headers["hx-redirect"].orEmpty()
 
         return if (path.isNotEmpty()) {
             val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
-            val size = getSize(videoUrl)
+            val size = getSize(videoUrl, videoHeaders)
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else if (proxyUrl?.isNotEmpty() == true) {
-            val videoUrl = client.newCall(GET(proxyUrl + id)).execute().parseAs<UrlDto>().url
-            val size = getSize(videoUrl)
+            val videoUrl = executeWithRetry(GET(proxyUrl + id), 5, listOf(200)).parseAs<UrlDto>().url
+            val size = getSize(videoUrl, videoHeaders)
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else {
             emptyList()
         }
     }
 
-    private fun getSize(url: String): String {
-        val response = client.newCall(GET(url, dlHeaders)).execute()
+    private fun getSize(url: String, headers: Headers): String {
+        val response = executeWithRetry(
+            request = GET(url, headers), 3, listOf(200))
         response.use {
-            if (it.code == 200) {
-                val size = it.header("Content-Length")?.toLongOrNull()
-                if (size != null) {
-                    return formatBytes(size)
-                }
+            val size = it.header("Content-Length")?.toLongOrNull()
+            if (size != null) {
+                return formatBytes(size)
             }
         }
         return "Unknown"
+    }
+
+    private fun executeWithRetry(request: Request, maxRetries: Int, validCodes: List<Int>): Response {
+        var retries = 0
+        var lastResponse: Response? = null
+
+        while (retries < maxRetries) {
+            if (lastResponse != null) {
+                lastResponse.close()
+            }
+            lastResponse = client.newCall(request).execute()
+            if (lastResponse.code in validCodes) {
+                return lastResponse
+            }
+            retries++
+            if (retries < maxRetries) {
+                Thread.sleep(1000)
+            }
+        }
+        return lastResponse!!
     }
 
     private fun formatBytes(bytes: Long): String {
