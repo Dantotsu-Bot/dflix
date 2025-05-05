@@ -43,7 +43,9 @@ class BuzzheavierExtractor(
             add("Referer", url)
         }.build()
 
-        val doc = client.newCall(GET(url, dlHeaders)).execute().asJsoup()
+        val res = client.newCall(GET(url)).execute()
+        val doc = res.asJsoup()
+        doc.close()
 
         val detailsText = doc.selectFirst("li:contains(Details:)")?.text() ?: ""
         val size = SIZE_REGEX.find(detailsText)?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
