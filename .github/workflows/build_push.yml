@@ -43,12 +43,6 @@ jobs:
           files_separator: " "
           safe_output: false
 
-        # This step is going to commit, but this will not trigger another workflow.
-      - name: Bump extensions that uses a modified lib
-        if: steps.modified-libs.outputs.any_changed == 'true'
-        run: |
-          python ./.github/scripts/bump-versions.py ${{ steps.modified-libs.outputs.all_changed_files }}
-
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v4
 

@@ -289,7 +289,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
             val seasonEpisode = rawSeasonEpisode.split("&nbsp;").first().trim() ?: ""
             val videoUrl = container.select("h5 a").attr("href").trim() ?: ""
             val size = container.select("h5 .badge-fill").text()
-                .replace(Regex(".*\\s(\\d+\\.\\d+\\s+MB)$"), "$1")
+                .replace(SIZE_REGEX, "$1")
                 .trim()
             val episodeName = container.select("h4").first()?.ownText()?.trim() ?: ""
             val quality = container.select("h4 .badge-outline").first()?.text()?.trim() ?: ""
@@ -344,6 +344,7 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
     companion object {
         private val SEASON_PATTERN = Regex("S(\\d+)")
         private val EPISODE_PATTERN = Regex("EP (\\d+)")
+        private val SIZE_REGEX = Regex(".*\\s(\\d+\\.\\d+\\s+MB)$")
     }
 
     data class EpisodeData(
