@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.util.parseAs
+import java.io.IOException
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import okhttp3.Headers
@@ -51,35 +52,32 @@ class BuzzheavierExtractor(
         val size = SIZE_REGEX.find(detailsText)?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
 
         val downloadRequest = GET("https://${httpUrl.host}/$id/download", dlHeaders)
-        val path = executeWithRetry(downloadRequest, 5, 204).headers["hx-redirect"].orEmpty()
+        val path = client.executeWithRetry(downloadRequest, 5, 204).headers["hx-redirect"].orEmpty()
 
         return if (path.isNotEmpty()) {
             val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else if (proxyUrl?.isNotEmpty() == true) {
-            val videoUrl = executeWithRetry(GET(proxyUrl + id), 5, 200).parseAs<UrlDto>().url
+            val videoUrl = client.executeWithRetry(GET(proxyUrl + id), 5, 200).parseAs<UrlDto>().url
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else {
             emptyList()
         }
     }
 
-    private fun executeWithRetry(request: Request, maxRetries: Int, validCode: Int): Response {
+    private fun OkHttpClient.executeWithRetry(request: Request, maxRetries: Int, validCode: Int): Response {
         var response: Response? = null
-
         for (attempt in 0 until maxRetries) {
             response?.close()
-            response = client.newCall(request).execute()
-
+            response = this.newCall(request).execute()
             if (response.code == validCode) {
                 return response
             }
-
             if (attempt < maxRetries - 1) {
                 Thread.sleep(1000)
             }
         }
-        return response!!
+        return response ?: throw IOException("Failed to execute request after $maxRetries attempts")
     }
 
     @Serializable
