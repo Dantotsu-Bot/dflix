@@ -18,7 +18,7 @@ class BuzzheavierExtractor(
 ) {
 
     companion object {
-        private val SIZE_REGEX = Regex("""Size\s*-\s*([^|]+)""")
+        private val SIZE_REGEX = Regex("""Size\s*-\s*([0-9.]+\s*[GMK]B)""")
     }
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -44,8 +44,9 @@ class BuzzheavierExtractor(
         }.build()
 
         val doc = client.newCall(GET(url, dlHeaders)).execute().asJsoup()
-        val selected = doc.select("li").firstOrNull { it.text().contains("Details:") }
-        val size = SIZE_REGEX.find(selected?.text().orEmpty())?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
+
+        val detailsText = doc.selectFirst("li:contains(Details:)")?.text() ?: ""
+        val size = SIZE_REGEX.find(detailsText)?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
 
         val downloadRequest = GET("https://${httpUrl.host}/$id/download", dlHeaders)
         val path = executeWithRetry(downloadRequest, 5, 204).headers["hx-redirect"].orEmpty()
@@ -59,17 +60,6 @@ class BuzzheavierExtractor(
         } else {
             emptyList()
         }
-    }
-
-    private fun getSize(url: String, headers: Headers): String {
-        val response = executeWithRetry(GET(url, headers), 3, 200)
-        response.use {
-            val size = it.header("Content-Length")?.toDoubleOrNull()
-            if (size != null) {
-                return formatBytes(size)
-            }
-        }
-        return "Unknown"
     }
 
     private fun executeWithRetry(request: Request, maxRetries: Int, validCode: Int): Response {
@@ -89,13 +79,6 @@ class BuzzheavierExtractor(
         }
         return response!!
     }
-
-    private fun formatBytes(bytes: Double) = when {
-            bytes >= 1 shl 30 -> "%.1f GB".format(bytes / (1 shl 30))
-            bytes >= 1 shl 20 -> "%.1f MB".format(bytes / (1 shl 20))
-            bytes >= 1 shl 10 -> "%.0f kB".format(bytes / (1 shl 10))
-            else -> "$bytes bytes"
-        }
 
     @Serializable
     data class UrlDto(val url: String)
