@@ -17,6 +17,10 @@ class BuzzheavierExtractor(
     private val headers: Headers,
 ) {
 
+    companion object {
+        private val SIZE_REGEX = Regex("""Size\s*-\s*([^|]+)""")
+    }
+
     @OptIn(ExperimentalSerializationApi::class)
     fun videosFromUrl(url: String, prefix: String = "Buzzheavier - ", proxyUrl: String? = null): List<Video> {
         val httpUrl = url.toHttpUrl()
@@ -39,16 +43,18 @@ class BuzzheavierExtractor(
             add("Referer", url)
         }.build()
 
+        val doc = client.newCall(GET(url, dlHeaders)).execute().asJsoup()
+        val selected = doc.select("li").firstOrNull { it.text().contains("Details:") }
+        val size = SIZE_REGEX.find(selected?.text().orEmpty())?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
+
         val downloadRequest = GET("https://${httpUrl.host}/$id/download", dlHeaders)
         val path = executeWithRetry(downloadRequest, 5, 204).headers["hx-redirect"].orEmpty()
 
         return if (path.isNotEmpty()) {
             val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
-            val size = getSize(videoUrl, videoHeaders)
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else if (proxyUrl?.isNotEmpty() == true) {
             val videoUrl = executeWithRetry(GET(proxyUrl + id), 5, 200).parseAs<UrlDto>().url
-            val size = getSize(videoUrl, videoHeaders)
             listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
         } else {
             emptyList()
