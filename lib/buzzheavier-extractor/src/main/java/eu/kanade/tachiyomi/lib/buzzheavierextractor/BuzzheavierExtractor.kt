@@ -41,24 +41,25 @@ class BuzzheavierExtractor(
             add("Referer", url)
         }.build()
 
-        val res = client.newCall(GET(url)).execute()
-        val doc = res.asJsoup()
-
-        val detailsText = doc.selectFirst("li:contains(Details:)")?.text() ?: ""
+        val siteRequest = client.newCall(GET(url)).execute()
+        val parsedHtml = siteRequest.asJsoup()
+        val detailsText = parsedHtml.selectFirst("li:contains(Details:)")?.text() ?: ""
         val size = SIZE_REGEX.find(detailsText)?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
 
         val downloadRequest = GET("https://${httpUrl.host}/$id/download", dlHeaders)
-        val path = client.executeWithRetry(downloadRequest, 5, 204).use { response -> response.header("hx-redirect").orEmpty() }
-
-        return if (path.isNotEmpty()) {
-            val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
-            listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
-        } else if (proxyUrl?.isNotEmpty() == true) {
-            val videoUrl = client.executeWithRetry(GET(proxyUrl + id), 5, 200).parseAs<UrlDto>().url
-            listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
-        } else {
-            emptyList()
+        val path = client.executeWithRetry(downloadRequest, 5, 204).use { response ->
+            response.header("hx-redirect").orEmpty()
         }
+
+        val videoUrl = if (path.isNotEmpty()) {
+            if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
+        } else if (proxyUrl?.isNotEmpty() == true) {
+            client.executeWithRetry(GET(proxyUrl + id), 5, 200).parseAs<UrlDto>().url
+        } else {
+            return emptyList()
+        }
+
+        return listOf(Video(videoUrl, "${prefix}${size}", videoUrl, videoHeaders))
     }
 
     private fun OkHttpClient.executeWithRetry(request: Request, maxRetries: Int, validCode: Int): Response {
