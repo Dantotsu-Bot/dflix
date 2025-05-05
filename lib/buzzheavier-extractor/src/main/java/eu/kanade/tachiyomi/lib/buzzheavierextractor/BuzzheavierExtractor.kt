@@ -29,7 +29,6 @@ class BuzzheavierExtractor(
 
         val dlHeaders = headers.newBuilder().apply {
             add("Accept", "*/*")
-            add("Accept-Encoding", "gzip, deflate, br, zstd")
             add("HX-Current-URL", url)
             add("HX-Request", "true")
             add("Priority", "u=1, i")
@@ -38,21 +37,18 @@ class BuzzheavierExtractor(
 
         val videoHeaders = headers.newBuilder().apply {
             add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-            add("Accept-Encoding", "gzip, deflate, br, zstd")
-            add("Accept-Language", "en-US,en-GB;q=0.9,en;q=0.8")
             add("Priority", "u=0, i")
             add("Referer", url)
         }.build()
 
         val res = client.newCall(GET(url)).execute()
         val doc = res.asJsoup()
-        res.close()
 
         val detailsText = doc.selectFirst("li:contains(Details:)")?.text() ?: ""
         val size = SIZE_REGEX.find(detailsText)?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
 
         val downloadRequest = GET("https://${httpUrl.host}/$id/download", dlHeaders)
-        val path = client.executeWithRetry(downloadRequest, 5, 204).headers["hx-redirect"].orEmpty()
+        val path = client.executeWithRetry(downloadRequest, 5, 204).use { response -> response.header("hx-redirect").orEmpty() }
 
         return if (path.isNotEmpty()) {
             val videoUrl = if (path.startsWith("http")) path else "https://${httpUrl.host}$path"
