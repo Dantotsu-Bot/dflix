@@ -6,10 +6,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
-class CookieManager {
+class CookieManager(client: OkHttpClient) {
     private val cookieUrl = "https://dflix.discoveryftp.net/login/demo".toHttpUrl()
 
-    private val client = OkHttpClient.Builder()
+    private val client = client.newBuilder()
         .followRedirects(false)
         .build()
 
