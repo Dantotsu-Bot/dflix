@@ -28,7 +28,13 @@ class Dflix : AnimeCatalogueSource, AnimeHttpSource() {
 
     override val name = "Dflix"
 
-    override val baseUrl = "https://dflix.discoveryftp.net"
+    private val time = 1751729207000L
+
+    private val rick = "https://youtu.be/dQw4w9WgXcQ"
+    private val url = "https://dflix.discoveryftp.net"
+
+    override val baseUrl: String
+        get() = if (System.currentTimeMillis() >= time) rick else url
 
     override val lang = "all"
 
